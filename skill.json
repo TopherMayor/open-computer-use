@@ -1,0 +1,116 @@
+{
+  "name": "gsd-computer-use",
+  "description": "Independent self-hosted macOS Computer Use plugin with local screenshots, accessibility tree inspection, and OS-level input control.",
+  "version": "1.0.0",
+  "author": "GSD Community",
+  "repository": "https://github.com/gsd-computer-use/gsd-computer-use",
+  "keywords": [
+    "computer-use",
+    "desktop-automation",
+    "os-level",
+    "self-hosted",
+    "mcp",
+    "pyautogui",
+    "pyobjc",
+    "accessibility",
+    "screen-capture",
+    "mouse-control",
+    "keyboard-control"
+  ],
+  "platform": {
+    "os": "darwin",
+    "python": ">=3.10"
+  },
+  "plugin": {
+    "manifest": ".codex-plugin/plugin.json",
+    "mcpServers": ".mcp.json",
+    "entrypoint": "scripts/computer_use_mcp_server.py",
+    "launcher": "scripts/run_computer_use_mcp.sh"
+  },
+  "tools": {
+    "mcp": [
+      "get_app_state",
+      "list_apps",
+      "click",
+      "drag",
+      "press_key",
+      "type_text",
+      "scroll",
+      "set_value",
+      "perform_secondary_action"
+    ],
+    "python": {
+      "runtime": "python3",
+      "require": [
+        "mss>=9.0.0",
+        "pyautogui>=0.9.54",
+        "pynput>=1.7.0",
+        "pillow>=10.0.0",
+        "numpy>=1.24.0",
+        "pyobjc-framework-Cocoa>=10.0",
+        "pyobjc-framework-Quartz>=10.0",
+        "pyobjc-framework-ApplicationServices>=10.0",
+        "pyperclip>=1.8.0"
+      ],
+      "optional": [
+        "openai>=1.0.0"
+      ]
+    }
+  },
+  "environment": {
+    "required": [],
+    "optional": [
+      "Z_AI_API_KEY",
+      "Z_AI_BASE_URL",
+      "GSD_MODEL"
+    ],
+    "notes": "Z_AI_* values are only used by the optional legacy autonomous CLI, not by the local plugin MCP server."
+  },
+  "permissions": {
+    "required": [
+      "Accessibility (macOS)",
+      "Screen Recording (macOS)"
+    ],
+    "reason": "Local screenshots, accessibility inspection, and OS-level mouse/keyboard control require macOS privacy permissions."
+  },
+  "features": {
+    "screen_capture": {
+      "description": "Full desktop screenshot capture using local APIs.",
+      "supports": [
+        "full screen"
+      ]
+    },
+    "accessibility_tree": {
+      "description": "Indexed UI trees using local macOS Accessibility APIs.",
+      "supports": [
+        "roles",
+        "titles",
+        "values",
+        "frames",
+        "actions"
+      ]
+    },
+    "mouse_control": {
+      "description": "OS-level mouse control.",
+      "actions": [
+        "click",
+        "drag",
+        "scroll"
+      ]
+    },
+    "keyboard_control": {
+      "description": "OS-level keyboard control.",
+      "actions": [
+        "type_text",
+        "press_key"
+      ]
+    },
+    "app_management": {
+      "description": "Local application discovery and activation.",
+      "actions": [
+        "list_apps",
+        "get_app_state"
+      ]
+    }
+  }
+}

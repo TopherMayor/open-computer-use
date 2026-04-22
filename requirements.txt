@@ -1,0 +1,18 @@
+# GSD Computer Use - local plugin dependencies
+# True OS-level desktop automation without a bundled native plugin.
+
+# Core dependencies
+mss>=9.0.0           # Fast screen capture
+pyautogui>=0.9.54     # Mouse/keyboard control
+pynput>=1.7.0         # Additional input handling
+
+# Optional but recommended
+pillow>=10.0.0        # Image processing
+numpy>=1.24.0         # Numerical operations
+pyobjc-framework-Cocoa>=10.0       # macOS running app discovery
+pyobjc-framework-Quartz>=10.0      # macOS screenshots/accessibility helpers
+pyobjc-framework-ApplicationServices>=10.0  # Accessibility APIs
+pyperclip>=1.8.0      # Clipboard fallback for larger text input
+
+# For async support (included with Python 3.10+)
+# asyncio is built-in

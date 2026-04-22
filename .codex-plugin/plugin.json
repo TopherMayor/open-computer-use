@@ -1,0 +1,47 @@
+{
+  "name": "gsd-computer-use",
+  "version": "1.0.0",
+  "description": "Independent self-hosted macOS Computer Use plugin with local screenshots, accessibility tree inspection, and OS-level input control.",
+  "author": {
+    "name": "GSD Community",
+    "email": "support@example.com",
+    "url": "https://github.com/gsd-computer-use/gsd-computer-use"
+  },
+  "homepage": "https://github.com/gsd-computer-use/gsd-computer-use",
+  "repository": "https://github.com/gsd-computer-use/gsd-computer-use",
+  "license": "MIT",
+  "keywords": [
+    "computer-use",
+    "desktop-control",
+    "macos",
+    "automation",
+    "accessibility",
+    "self-hosted"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "GSD Computer Use",
+    "shortDescription": "Self-hosted Mac app control from Codex",
+    "longDescription": "An independent self-hosted Computer Use implementation for macOS. It exposes local MCP tools for app state capture, accessibility tree inspection, mouse and keyboard actions, scrolling, setting values, and invoking accessibility actions. It does not launch or wrap any bundled native plugin. Screenshots and app metadata stay on the local machine unless the calling agent chooses to include them in its own responses.",
+    "developerName": "GSD Community",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Screenshots",
+      "Accessibility",
+      "Desktop Control"
+    ],
+    "websiteURL": "https://github.com/gsd-computer-use/gsd-computer-use",
+    "privacyPolicyURL": "https://github.com/gsd-computer-use/gsd-computer-use",
+    "termsOfServiceURL": "https://github.com/gsd-computer-use/gsd-computer-use",
+    "defaultPrompt": [
+      "Inspect Safari and summarize the visible page",
+      "Click the selected button in Finder",
+      "Type a short note into the active app"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

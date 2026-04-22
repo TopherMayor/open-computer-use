@@ -1,0 +1,7 @@
+# Optional legacy autonomous-agent dependencies
+#
+# The self-hosted plugin MCP server does not need these packages. Install this
+# file only if you want to use `gsd_computer_use.py --task`, which delegates
+# screen interpretation to a Z.AI/OpenAI-compatible vision model.
+
+openai>=1.0.0
