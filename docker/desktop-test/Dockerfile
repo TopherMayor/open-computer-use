@@ -28,7 +28,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
 
 COPY requirements-linux.txt .
-RUN pip3 install --no-cache-dir -r requirements-linux.txt
+RUN pip3 install --no-cache-dir --break-system-packages pytest -r requirements-linux.txt
 
 COPY . /repo
 

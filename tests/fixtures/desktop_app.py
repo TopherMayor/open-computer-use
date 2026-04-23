@@ -49,7 +49,7 @@ class DesktopTestApp(Gtk.Application):
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("Items", renderer, text=1)
         tree_view.append_column(column)
-        scrolled.set_child(tree_view)
+        scrolled.add(tree_view)
 
         menu_bar = Gtk.MenuBar()
         file_menu = Gtk.MenuItem(label="File")

@@ -89,6 +89,7 @@ class FakeBackend:
         button = str(kwargs.get("mouse_button", "left"))
         click_count = int(kwargs.get("click_count", 1))
         if element_index is not None:
+            base_element_from_index(element_index)
             return {"success": True, "method": "AXPress", "element_index": element_index}
         return {"success": True, "method": "mouse", "x": x, "y": y, "button": button, "click_count": click_count}
 

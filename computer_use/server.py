@@ -80,11 +80,13 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     tree = be.get_accessibility_tree(app_name, pid, max_elements=max_elements)
     _types.LAST_APP = app_name
 
-    result: dict[str, Any] = {"app": app_info, "accessibility_tree": tree}
+    content: list[dict[str, Any]] = [
+        {"type": "text", "text": pretty_json({"app": app_info, "accessibility_tree": tree})}
+    ]
     if include_screenshot:
         b64, w, h, method = be.capture_screenshot()
-        result["screenshot"] = {"data": b64, "width": w, "height": h, "method": method}
-    return result
+        content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+    return {"content": content}
 
 
 def _tool_list_apps(args: dict[str, Any], be: Any) -> dict[str, Any]:
@@ -180,7 +182,11 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             arguments = params.get("arguments") or {}
             if name not in TOOL_HANDLERS:
                 raise RuntimeError(f"Unknown tool: {name}")
-            result = TOOL_HANDLERS[name](arguments, backend)
+            tool_result = TOOL_HANDLERS[name](arguments, backend)
+            if "content" in tool_result:
+                result = tool_result
+            else:
+                result = ok_text(tool_result)
         elif method == "resources/list":
             result = {"resources": []}
         elif method == "prompts/list":
