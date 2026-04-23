@@ -40,7 +40,7 @@ def _screen_size() -> dict[str, int]:
     try:
         pyautogui = require_pyautogui()
         size = pyautogui.size()
-        return {"width": int(size[0]), "height": int(size[1]}
+        return {"width": int(size[0]), "height": int(size[1])}
     except Exception:
         return SCREEN_SIZE.copy()
 
@@ -157,7 +157,8 @@ def _find_running_app(app_name: str) -> dict[str, Any] | None:
 def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
     app = _find_running_app(app_name)
     if app is not None:
-        _activate_app(app.get("windows", [None])[0] if app.get("windows") else None
+        windows = app.get("windows") if app.get("windows") else [None]
+        _activate_app(windows)
         code, _, _ = _run(["wmctrl", "-a", app_name])
         if code != 0:
             if app.get("windows"):

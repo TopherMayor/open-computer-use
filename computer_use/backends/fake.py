@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..types import CachedElement, clear_cache, element_from_index as base_element_from_index, frame_center
+from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index as base_element_from_index, frame_center
 
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
@@ -59,6 +59,23 @@ class FakeBackend:
 
     def get_accessibility_tree(self, app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
         max_elements = int(kwargs.get("max_elements", 10))
+        clear_cache()
+        for i in range(min(max_elements, 10)):
+            index_str = str(i)
+            ELEMENT_CACHE[index_str] = CachedElement(
+                element=None,
+                frame={
+                    "x": i * 10,
+                    "y": i * 10,
+                    "width": 100,
+                    "height": 50,
+                    "center_x": i * 10 + 50,
+                    "center_y": i * 10 + 25,
+                },
+                app=app_name,
+                role="button" if i > 0 else "window",
+                title=f"Element {i}" if i > 0 else app_name,
+            )
         tree = {"element_index": "0", "role": "window", "title": app_name, "children": []}
         for i in range(1, min(max_elements, 10)):
             tree["children"].append({

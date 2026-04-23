@@ -7,6 +7,9 @@ import traceback
 from typing import Any, Callable
 
 from . import SERVER_NAME, SERVER_VERSION
+from . import types as _types
+
+PROTOCOL_VERSION = "2024-11-05"
 
 
 def json_dumps(data: Any) -> str:
@@ -61,160 +64,95 @@ def get_backend() -> Any:
     return create_backend()
 
 
-backend = get_backend()
+backend: Any = None
 
 
-def tool_get_app_state(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    from .types import LAST_APP
-    global LAST_APP
-
-    app_name = str(args.get("app") or "").strip()
+def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    app_name = args.get("app")
     if not app_name:
-        raise RuntimeError("app is required")
-
-    max_depth = int(args.get("max_depth", 7))
+        raise RuntimeError("'app' is required")
     max_elements = int(args.get("max_elements", 220))
-    include_screenshot = bool(args.get("include_screenshot", True))
+    include_screenshot = args.get("include_screenshot", True)
 
-    app = be.activate_or_launch_app(app_name)
-    LAST_APP = app_name
-    be.clear_cache()
+    app_info = be.activate_or_launch_app(app_name)
+    pid = app_info.get("pid", 0)
 
-    screenshot_content: dict[str, Any] | None = None
-    screenshot_meta: dict[str, Any] | None = None
+    tree = be.get_accessibility_tree(app_name, pid, max_elements=max_elements)
+    _types.LAST_APP = app_name
+
+    result: dict[str, Any] = {"app": app_info, "accessibility_tree": tree}
     if include_screenshot:
-        image_b64, width, height, capture_backend = be.capture_screenshot()
-        screenshot_content = {"type": "image", "data": image_b64, "mimeType": "image/png"}
-        screenshot_meta = {
-            "width": width,
-            "height": height,
-            "backend": capture_backend,
-            "coordinateSystem": "screen coordinates",
-        }
+        b64, w, h, method = be.capture_screenshot()
+        result["screenshot"] = {"data": b64, "width": w, "height": h, "method": method}
+    return result
 
-    tree = be.get_accessibility_tree(
-        app_name,
-        app.get("pid", 0),
-        max_depth=max_depth,
-        max_elements=max_elements,
+
+def _tool_list_apps(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return {"apps": be.list_apps()}
+
+
+def _tool_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    element_index = args.get("element_index")
+    x = args.get("x")
+    y = args.get("y")
+    return be.click(
+        element_index=str(element_index) if element_index is not None else None,
+        x=int(x) if x is not None else None,
+        y=int(y) if y is not None else None,
+        mouse_button=args.get("mouse_button", "left"),
+        click_count=int(args.get("click_count", 1)),
     )
 
-    payload = {
-        "app": app,
-        "screen": be.screen_size(),
-        "screenshot": screenshot_meta,
-        "accessibilityTrusted": be.is_accessibility_trusted(),
-        "accessibilityTree": tree,
-        "flatElements": be.flat_elements(),
-        "elementCount": len(be.flat_elements()),
-        "notes": [
-            "Use element_index values from this response for click, scroll, set_value, and perform_secondary_action.",
-            "If accessibilityTrusted is false, grant Accessibility permission to the process launching this MCP server.",
-        ],
-    }
 
-    content = []
-    if screenshot_content is not None:
-        content.append(screenshot_content)
-    content.append({"type": "text", "text": pretty_json(payload)})
-    return ok_content(content)
-
-
-def tool_list_apps(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    apps = be.list_apps(
-        recent_days=int(args.get("recent_days", 14)),
-        include_recent=bool(args.get("include_recent", True)),
-        include_installed=bool(args.get("include_installed", False)),
+def _tool_drag(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return be.drag(
+        int(args["from_x"]),
+        int(args["from_y"]),
+        int(args["to_x"]),
+        int(args["to_y"]),
+        duration=float(args.get("duration", 0.35)),
     )
-    running = [a for a in apps if a.get("running")]
-    recent = [a for a in apps if a.get("lastUsed")]
-    installed = [a for a in apps if not a.get("running") and not a.get("lastUsed")]
-    return ok_text({
-        "runningCount": len(running),
-        "recentCount": len(recent),
-        "installedCount": len(installed),
-        "apps": apps,
-    })
 
 
-def tool_click(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.click(
-        element_index=args.get("element_index"),
-        x=args.get("x"),
-        y=args.get("y"),
-        **args,
+def _tool_press_key(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return be.press_key(args["key"])
+
+
+def _tool_type_text(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return be.type_text(args["text"])
+
+
+def _tool_scroll(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return be.scroll(
+        args["element_index"],
+        args["direction"],
+        float(args.get("pages", 1)),
     )
-    return ok_text(result)
 
 
-def tool_drag(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.drag(
-        from_x=int(args["from_x"]),
-        from_y=int(args["from_y"]),
-        to_x=int(args["to_x"]),
-        to_y=int(args["to_y"]),
-        **args,
-    )
-    return ok_text(result)
+def _tool_set_value(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return be.set_value(args["element_index"], args["value"])
 
 
-def tool_press_key(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.press_key(str(args.get("key") or ""))
-    return ok_text(result)
+def _tool_perform_secondary_action(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    return be.perform_action(args["element_index"], args["action"])
 
 
-def tool_type_text(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.type_text(str(args.get("text") or ""))
-    return ok_text(result)
-
-
-def tool_scroll(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.scroll(
-        element_index=str(args.get("element_index")),
-        direction=str(args.get("direction", "down")),
-        pages=float(args.get("pages", 1)),
-        **args,
-    )
-    return ok_text(result)
-
-
-def tool_set_value(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.set_value(
-        element_index=str(args.get("element_index")),
-        value=str(args.get("value") or ""),
-        **args,
-    )
-    return ok_text(result)
-
-
-def tool_perform_secondary_action(args: dict[str, Any], be: Any = None) -> dict[str, Any]:
-    result = be.perform_action(
-        element_index=str(args.get("element_index")),
-        action=str(args.get("action") or ""),
-        **args,
-    )
-    return ok_text(result)
-
-
-TOOL_HANDLERS: dict[str, Callable[[dict[str, Any], Any], dict[str, Any]]] = {
-    "get_app_state": tool_get_app_state,
-    "list_apps": tool_list_apps,
-    "click": tool_click,
-    "drag": tool_drag,
-    "press_key": tool_press_key,
-    "type_text": tool_type_text,
-    "scroll": tool_scroll,
-    "set_value": tool_set_value,
-    "perform_secondary_action": tool_perform_secondary_action,
+TOOL_HANDLERS: dict[str, Callable] = {
+    "get_app_state": _tool_get_app_state,
+    "list_apps": _tool_list_apps,
+    "click": _tool_click,
+    "drag": _tool_drag,
+    "press_key": _tool_press_key,
+    "type_text": _tool_type_text,
+    "scroll": _tool_scroll,
+    "set_value": _tool_set_value,
+    "perform_secondary_action": _tool_perform_secondary_action,
 }
 
 
-PROTOCOL_VERSION = "2024-11-05"
-DEFAULT_MAX_DEPTH = 7
-DEFAULT_MAX_ELEMENTS = 220
-
-
 def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
+    global backend
     if "id" not in message:
         return None
 
@@ -222,8 +160,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
     method = message.get("method")
     params = message.get("params") or {}
 
-    global backend
-    if method in ("initialize", "ping", "tools/list", "resources/list", "prompts/list"):
+    if backend is None:
         backend = get_backend()
 
     try:
