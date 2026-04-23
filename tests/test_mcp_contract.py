@@ -44,6 +44,8 @@ class TestMCPContract:
                 "scroll",
                 "set_value",
                 "perform_secondary_action",
+                "analyze_screenshot",
+                "screenshot_diff",
             ]
             for name in expected:
                 assert name in tool_names, f"Missing tool: {name}"
