@@ -7,6 +7,7 @@ import subprocess
 from typing import Any
 
 from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
+from .input_utils import KEY_ALIASES, normalize_button
 
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
@@ -215,36 +216,6 @@ def _activate_app(windows: list[str | None]) -> str | None:
         if code == 0:
             return wid
     return None
-
-
-def normalize_button(button: str) -> str:
-    button = (button or "left").lower()
-    if button not in {"left", "right", "middle"}:
-        raise RuntimeError("mouse_button must be one of: left, right, middle")
-    return button
-
-
-KEY_ALIASES = {
-    "return": "enter",
-    "enter": "enter",
-    "escape": "esc",
-    "esc": "esc",
-    "space": "space",
-    "tab": "tab",
-    "backspace": "backspace",
-    "delete": "delete",
-    "del": "delete",
-    "up": "up",
-    "down": "down",
-    "left": "left",
-    "right": "right",
-    "home": "home",
-    "end": "end",
-    "page_up": "pageup",
-    "pageup": "pageup",
-    "page_down": "pagedown",
-    "pagedown": "pagedown",
-}
 
 
 def normalize_key_token(token: str) -> str:
