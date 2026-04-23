@@ -44,14 +44,13 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "element_index": {"type": "string", "description": "Index from the latest get_app_state response."},
                 "x": {"type": "number", "description": "Screenshot x coordinate."},
                 "y": {"type": "number", "description": "Screenshot y coordinate."},
                 "click_count": {"type": "integer", "minimum": 1, "maximum": 4, "default": 1},
                 "mouse_button": {"type": "string", "enum": ["left", "right", "middle"], "default": "left"},
             },
-            "required": ["app"],
             "additionalProperties": False,
         },
     },
@@ -61,14 +60,14 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "from_x": {"type": "number"},
                 "from_y": {"type": "number"},
                 "to_x": {"type": "number"},
                 "to_y": {"type": "number"},
                 "duration": {"type": "number", "minimum": 0, "default": 0.35},
             },
-            "required": ["app", "from_x", "from_y", "to_x", "to_y"],
+            "required": ["from_x", "from_y", "to_x", "to_y"],
             "additionalProperties": False,
         },
     },
@@ -78,10 +77,10 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "key": {"type": "string", "description": "Key or key combination."},
             },
-            "required": ["app", "key"],
+            "required": ["key"],
             "additionalProperties": False,
         },
     },
@@ -91,10 +90,10 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "text": {"type": "string", "description": "Text to type."},
             },
-            "required": ["app", "text"],
+            "required": ["text"],
             "additionalProperties": False,
         },
     },
@@ -104,12 +103,12 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "element_index": {"type": "string", "description": "Index from the latest get_app_state response."},
                 "direction": {"type": "string", "enum": ["up", "down", "left", "right"]},
                 "pages": {"type": "number", "minimum": 0, "default": 1},
             },
-            "required": ["app", "element_index", "direction"],
+            "required": ["element_index", "direction"],
             "additionalProperties": False,
         },
     },
@@ -119,11 +118,11 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "element_index": {"type": "string", "description": "Index from the latest get_app_state response."},
                 "value": {"type": "string", "description": "Value to assign."},
             },
-            "required": ["app", "element_index", "value"],
+            "required": ["element_index", "value"],
             "additionalProperties": False,
         },
     },
@@ -133,11 +132,11 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "app": {"type": "string", "description": "App name or bundle identifier."},
+                "app": {"type": "string", "description": "App name or bundle identifier. Unused; app is activated by get_app_state."},
                 "element_index": {"type": "string", "description": "Index from the latest get_app_state response."},
                 "action": {"type": "string", "description": "Accessibility action name."},
             },
-            "required": ["app", "element_index", "action"],
+            "required": ["element_index", "action"],
             "additionalProperties": False,
         },
     },
