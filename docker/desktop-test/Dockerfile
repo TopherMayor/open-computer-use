@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     gir1.2-atspi-2.0 \
     gir1.2-gtk-3.0 \
     openbox \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     curl \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -28,7 +30,7 @@ USER testuser
 WORKDIR /home/testuser/repo
 
 COPY --chown=testuser:testuser requirements-linux.txt .
-RUN pip3 install --no-cache-dir --break-system-packages pytest -r requirements-linux.txt
+RUN pip3 install --no-cache-dir --break-system-packages pytest pytesseract>=0.3.10 -r requirements-linux.txt
 
 COPY --chown=testuser:testuser . /home/testuser/repo
 
