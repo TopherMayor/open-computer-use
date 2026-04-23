@@ -48,13 +48,15 @@ class FakeBackend:
 
     def capture_screenshot(self) -> tuple[str, int, int, str]:
         import base64
-        import struct
-        import zlib
+        import io
+
+        from PIL import Image
 
         width, height = 1920, 1080
-        raw = b"\x00\x00\x00" * (width * height)
-        data = zlib.compress(raw)
-        b64 = base64.b64encode(data).decode("ascii")
+        img = Image.new("RGB", (width, height), (64, 64, 64))
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode("ascii")
         return b64, width, height, "fake"
 
     def get_accessibility_tree(self, app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
@@ -126,6 +128,15 @@ class FakeBackend:
 
     def element_from_index(self, index: str) -> Any:
         return _fake_element(int(index))
+
+    def ocr_extract(self, image_bytes: bytes) -> list[dict[str, Any]]:
+        return [{"text": "FakeApp", "x": 10, "y": 10, "width": 80, "height": 20, "confidence": 0.95}]
+
+    def annotate_screenshot(self, image_bytes: bytes, elements: list[dict[str, Any]]) -> bytes:
+        return image_bytes
+
+    def diff_screenshots(self, before_bytes: bytes, after_bytes: bytes, threshold: float = 5.0) -> dict[str, Any]:
+        return {"changed": False, "regions": [], "diff_image": b""}
 
 
 def create_backend() -> FakeBackend:
