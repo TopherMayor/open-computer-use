@@ -143,12 +143,12 @@ def _find_running_app(app_name: str) -> dict[str, Any] | None:
     apps = _list_apps()
     for app in apps:
         name = str(app.get("name") or "").lower()
-        if needle in name:
+        if needle == name:
             return app
 
     for app in apps:
         name = str(app.get("name") or "").lower()
-        if needle in name:
+        if needle in name or name in needle:
             return app
 
     return None
