@@ -90,7 +90,11 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _tool_list_apps(args: dict[str, Any], be: Any) -> dict[str, Any]:
-    return {"apps": be.list_apps()}
+    return {"apps": be.list_apps(
+        include_recent=args.get("include_recent", True),
+        recent_days=int(args.get("recent_days", 14)),
+        include_installed=args.get("include_installed", False),
+    )}
 
 
 def _tool_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
