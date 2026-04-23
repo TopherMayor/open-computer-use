@@ -339,30 +339,91 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
 
         try:
             role = el.get_role_name() if hasattr(el, "get_role_name") else None
-            name = el.get_name() if hasattr(el, "get_name") else None
         except Exception:
             role = None
+        try:
+            name = el.get_name() if hasattr(el, "get_name") else None
+        except Exception:
             name = None
+
+        desc = None
+        try:
+            desc = el.get_description() if hasattr(el, "get_description") else None
+        except Exception:
+            pass
+
+        val = None
+        try:
+            val = Atspi.Value.get_value(el) if hasattr(el, "get_value") else None
+        except Exception:
+            pass
+
+        enabled = None
+        try:
+            states = el.get_state_set() if hasattr(el, "get_state_set") else None
+            if states is not None:
+                enabled = states.contains(Atspi.StateType.ENABLED)
+        except Exception:
+            pass
+
+        focused = None
+        try:
+            if states is not None:
+                focused = states.contains(Atspi.StateType.FOCUSED)
+        except Exception:
+            pass
+
+        frame = None
+        try:
+            ext = el.get_extents(Atspi.CoordType.SCREEN)
+            if ext and (ext.width > 0 or ext.height > 0):
+                frame = {
+                    "x": ext.x, "y": ext.y,
+                    "width": ext.width, "height": ext.height,
+                    "center_x": ext.x + ext.width / 2,
+                    "center_y": ext.y + ext.height / 2,
+                }
+        except Exception:
+            pass
+
+        actions = []
+        try:
+            action_iface = Atspi.Action
+            n_actions = action_iface.get_n_actions(el)
+            for i in range(n_actions):
+                try:
+                    aname = action_iface.get_action_name(el, i)
+                    if aname:
+                        actions.append(str(aname))
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
         index_str = str(element_index)
         ELEMENT_CACHE[index_str] = CachedElement(
             element=el,
-            frame=None,
+            frame=frame,
             app=app_name,
             role=str(role) if role else None,
             title=str(name) if name else None,
         )
 
-        node = {
-            "element_index": index_str,
+        node: dict[str, Any] = {"element_index": index_str}
+        fields = {
             "role": role,
             "title": name,
+            "description": desc,
+            "value": val,
+            "enabled": enabled,
+            "focused": focused,
+            "frame": frame,
         }
-
-        if role:
-            node["role"] = role
-        if name:
-            node["title"] = name
+        for key, value in fields.items():
+            if value not in (None, "", []):
+                node[key] = value
+        if actions:
+            node["actions"] = actions
 
         try:
             children = el.get_children() if hasattr(el, "get_children") else []
@@ -397,22 +458,103 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
     return tree
 
 
+def _installed_linux_apps(limit: int = 80) -> list[dict[str, Any]]:
+    from pathlib import Path
+
+    dirs = [
+        "/usr/share/applications",
+        os.path.expanduser("~/.local/share/applications"),
+        "/var/lib/flatpak/exports/share/applications",
+        os.path.expanduser("~/.local/share/flatpak/exports/share/applications"),
+    ]
+
+    apps = []
+    seen: set[str] = set()
+    for dir_path in dirs:
+        dir_obj = Path(dir_path)
+        if not dir_obj.exists():
+            continue
+        for desktop_file in sorted(dir_obj.glob("*.desktop"))[:limit]:
+            if desktop_file.name in seen:
+                continue
+            seen.add(desktop_file.name)
+            try:
+                name = None
+                no_display = False
+                with open(desktop_file) as f:
+                    for line in f:
+                        if line.startswith("Name="):
+                            name = line.strip().split("=", 1)[1]
+                        elif line.startswith("NoDisplay="):
+                            no_display = line.strip().split("=", 1)[1].lower() == "true"
+                        elif line.startswith("[") and line.strip() != "[Desktop Entry]":
+                            break
+                if name and not no_display:
+                    apps.append({
+                        "name": name,
+                        "running": False,
+                        "source": "desktop-file",
+                        "desktop_file": str(desktop_file),
+                    })
+            except Exception:
+                continue
+            if len(apps) >= limit:
+                return apps
+    return apps
+
+
+def _merge_app_lists(running: list[dict[str, Any]], installed: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for item in installed:
+        key = (item.get("name") or "").lower()
+        merged[key] = item
+    for item in running:
+        key = (item.get("name") or "").lower()
+        existing = merged.get(key, {})
+        existing.update({k: v for k, v in item.items() if v is not None})
+        existing["running"] = True
+        merged[key] = existing
+    return sorted(merged.values(), key=lambda a: (not a.get("running", False), (a.get("name") or "").lower()))
+
+
 def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, Any]:
     code, stdout, _ = _run(["wmctrl", "-l"])
     if code != 0:
         return {"element_index": "0", "role": "window", "title": app_name, "children": []}
 
+    ELEMENT_CACHE.clear()
+    ELEMENT_CACHE["0"] = CachedElement(
+        element=None,
+        frame={"x": 0, "y": 0, "width": 1920, "height": 1080, "center_x": 960, "center_y": 540},
+        app=app_name, role="window", title=app_name,
+    )
+
     children = []
     for i, line in enumerate(stdout.splitlines()):
-        if i >= max_elements:
+        if i + 1 >= max_elements:
             break
         parts = line.split(None, 3)
         if len(parts) >= 4:
-            children.append({
-                "element_index": str(i + 1),
-                "role": "window",
-                "title": parts[3],
-            })
+            wid = parts[0]
+            title = parts[3]
+            index_str = str(i + 1)
+
+            frame = None
+            geo_code, geo_stdout, _ = _run(["xdotool", "getwindowgeometry", "--shell", wid])
+            if geo_code == 0:
+                geo: dict[str, str] = {}
+                for geo_line in geo_stdout.splitlines():
+                    if "=" in geo_line:
+                        k, v = geo_line.split("=", 1)
+                        geo[k.strip()] = v.strip()
+                if all(k in geo for k in ("X", "Y", "WIDTH", "HEIGHT")):
+                    gx, gy, gw, gh = int(geo["X"]), int(geo["Y"]), int(geo["WIDTH"]), int(geo["HEIGHT"])
+                    frame = {"x": gx, "y": gy, "width": gw, "height": gh, "center_x": gx + gw / 2, "center_y": gy + gh / 2}
+
+            ELEMENT_CACHE[index_str] = CachedElement(
+                element=None, frame=frame, app=app_name, role="window", title=title,
+            )
+            children.append({"element_index": index_str, "role": "window", "title": title})
 
     return {"element_index": "0", "role": "window", "title": app_name, "children": children}
 
@@ -424,7 +566,15 @@ class LinuxX11Backend:
         self._app = None
 
     def list_apps(self, **kwargs) -> list[dict[str, Any]]:
-        return _list_apps()
+        include_installed = bool(kwargs.get("include_installed", False))
+
+        apps = _list_apps()
+
+        if include_installed:
+            installed = _installed_linux_apps()
+            apps = _merge_app_lists(apps, installed)
+
+        return apps
 
     def activate_or_launch_app(self, app_name: str) -> dict[str, Any]:
         return _launch_or_activate_app(app_name)
@@ -439,19 +589,28 @@ class LinuxX11Backend:
         button = normalize_button(str(kwargs.get("mouse_button", "left")))
         click_count = int(kwargs.get("click_count", 1))
 
-        pyautogui = require_pyautogui()
-
         if element_index is not None:
             cached = element_from_index(str(element_index))
-            if cached.frame:
-                cx, cy = frame_center(cached.frame)
-            else:
-                raise RuntimeError(f"No frame for element {element_index}")
+            if button == "left" and click_count == 1:
+                try:
+                    from gi.repository import Atspi  # type: ignore
+                    if cached.element is not None:
+                        action_iface = Atspi.Action
+                        n_actions = action_iface.get_n_actions(cached.element)
+                        for i in range(n_actions):
+                            aname = action_iface.get_action_name(cached.element, i)
+                            if aname and aname.lower() in ("press", "activate", "click"):
+                                action_iface.do_action(cached.element, i)
+                                return {"success": True, "method": "ATSPI-press", "element_index": str(element_index)}
+                except Exception:
+                    pass
+            cx, cy = frame_center(cached.frame)
         else:
             if x is None or y is None:
                 raise RuntimeError("click requires either element_index or both x and y")
             cx, cy = x, y
 
+        pyautogui = require_pyautogui()
         pyautogui.click(x=cx, y=cy, clicks=max(click_count, 1), button=button, interval=0.08)
         return {"success": True, "method": "mouse", "x": cx, "y": cy, "button": button, "click_count": click_count}
 
@@ -505,11 +664,74 @@ class LinuxX11Backend:
 
     def set_value(self, element_index: str, value: str, **kwargs) -> dict[str, Any]:
         cached = element_from_index(element_index)
+
+        if cached.element is not None:
+            try:
+                from gi.repository import Atspi  # type: ignore
+                value_iface = Atspi.Value
+                if hasattr(value_iface, "set_value"):
+                    try:
+                        numeric = float(value)
+                        result = value_iface.set_value(cached.element, numeric)
+                        if result:
+                            return {"success": True, "method": "ATSPI-Value", "element_index": element_index}
+                    except (ValueError, TypeError):
+                        pass
+            except Exception:
+                pass
+
+        x, y = frame_center(cached.frame)
+        pyautogui = require_pyautogui()
+        pyautogui.click(x=x, y=y)
+        _press_key_sequence("ctrl+a")
         method = _type_literal_text(value)
-        return {"success": True, "method": method, "element_index": element_index}
+        return {"success": True, "method": f"click-select-{method}", "element_index": element_index}
 
     def perform_action(self, element_index: str, action: str, **kwargs) -> dict[str, Any]:
-        return {"success": True, "element_index": element_index, "action": action, "note": "AT-SPI action not fully implemented"}
+        cached = element_from_index(element_index)
+        if cached.element is None:
+            raise RuntimeError(f"No ATSPI element for index {element_index}")
+
+        try:
+            from gi.repository import Atspi  # type: ignore
+        except Exception:
+            raise RuntimeError("ATSPI not available for action execution")
+
+        action_iface = Atspi.Action
+        try:
+            n_actions = action_iface.get_n_actions(cached.element)
+        except Exception:
+            n_actions = 0
+        available = []
+        for i in range(n_actions):
+            try:
+                aname = action_iface.get_action_name(cached.element, i)
+                available.append(str(aname))
+            except Exception:
+                pass
+
+        normalized = action.lower().replace("_", "").replace("-", "")
+        matched_action = None
+        matched_index = None
+        for i, name in enumerate(available):
+            stripped = name.lower().replace("_", "").replace("-", "")
+            if normalized == stripped or normalized == name.lower():
+                matched_action = name
+                matched_index = i
+                break
+
+        if matched_index is None:
+            for i, name in enumerate(available):
+                if name.lower().startswith(normalized[:4]):
+                    matched_action = name
+                    matched_index = i
+                    break
+
+        if matched_index is None:
+            raise RuntimeError(f"Action {action!r} not found. Available: {available}")
+
+        success = action_iface.do_action(cached.element, matched_index)
+        return {"success": bool(success), "element_index": element_index, "action": matched_action}
 
     def screen_size(self) -> dict[str, int]:
         return _screen_size()
