@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
     python3.12 \
     python3-pip \
     xvfb \
@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
     xdotool \
     wmctrl \
     xclip \
-    xsel \
     x11-utils \
     scrot \
     dbus-x11 \
@@ -20,17 +19,18 @@ RUN apt-get update && apt-get install -y \
     gir1.2-atspi-2.0 \
     gir1.2-gtk-3.0 \
     openbox \
-    wget \
-    curl
+    curl \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --shell /bin/bash testuser
+USER testuser
+WORKDIR /home/testuser/repo
 
-WORKDIR /repo
-
-COPY requirements-linux.txt .
+COPY --chown=testuser:testuser requirements-linux.txt .
 RUN pip3 install --no-cache-dir --break-system-packages pytest -r requirements-linux.txt
 
-COPY . /repo
+COPY --chown=testuser:testuser . /home/testuser/repo
 
 EXPOSE 6080
 
