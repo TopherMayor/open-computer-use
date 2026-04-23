@@ -20,6 +20,7 @@ TOOLS: list[dict[str, Any]] = [
                 "max_depth": {"type": "integer", "minimum": 1, "maximum": 12, "default": DEFAULT_MAX_DEPTH},
                 "max_elements": {"type": "integer", "minimum": 10, "maximum": 1000, "default": DEFAULT_MAX_ELEMENTS},
                 "include_screenshot": {"type": "boolean", "default": True},
+                "annotate_screenshot": {"type": "boolean", "default": False, "description": "Draw numbered bounding boxes on the screenshot using accessibility tree elements."},
             },
             "required": ["app"],
             "additionalProperties": False,
@@ -137,6 +138,33 @@ TOOLS: list[dict[str, Any]] = [
                 "action": {"type": "string", "description": "Accessibility action name."},
             },
             "required": ["element_index", "action"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "analyze_screenshot",
+        "description": "Capture and analyze the current screen. Returns OCR text, detected elements, and an annotated screenshot with numbered bounding boxes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "ocr": {"type": "boolean", "default": True, "description": "Include OCR text extraction."},
+                "annotate": {"type": "boolean", "default": True, "description": "Return annotated screenshot with element indices."},
+                "app": {"type": "string", "description": "Optional app name to focus analysis on."},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "screenshot_diff",
+        "description": "Compare the current screenshot with a previously captured one. Returns changed regions and a diff image.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "before": {"type": "string", "description": "Base64-encoded PNG of the before screenshot."},
+                "after": {"type": "string", "description": "Base64-encoded PNG of the after screenshot. If omitted, captures current screen."},
+                "threshold": {"type": "number", "minimum": 0, "maximum": 100, "default": 5, "description": "Minimum change percentage to report."},
+            },
+            "required": ["before"],
             "additionalProperties": False,
         },
     },

@@ -74,6 +74,7 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     max_depth = int(args.get("max_depth", 7))
     max_elements = int(args.get("max_elements", 220))
     include_screenshot = args.get("include_screenshot", True)
+    annotate = args.get("annotate_screenshot", False)
 
     app_info = be.activate_or_launch_app(app_name)
     pid = app_info.get("pid", 0)
@@ -86,7 +87,21 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     ]
     if include_screenshot:
         b64, w, h, method = be.capture_screenshot()
-        content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+        import base64
+        screenshot_bytes = base64.b64decode(b64)
+        _types.LAST_SCREENSHOT = screenshot_bytes
+
+        if annotate:
+            elements = _tree_to_elements(tree)
+            try:
+                from .vision import annotate_screenshot as _annotate
+                annotated_bytes = _annotate(screenshot_bytes, elements)
+                annotated_b64 = base64.b64encode(annotated_bytes).decode("ascii")
+                content.append({"type": "image", "data": annotated_b64, "mimeType": "image/png"})
+            except Exception:
+                content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+        else:
+            content.append({"type": "image", "data": b64, "mimeType": "image/png"})
     return {"content": content}
 
 
@@ -145,6 +160,117 @@ def _tool_perform_secondary_action(args: dict[str, Any], be: Any) -> dict[str, A
     return be.perform_action(args["element_index"], args["action"])
 
 
+def _tree_to_elements(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
+    elements = []
+    if not tree:
+        return elements
+
+    def walk(node: dict[str, Any]) -> None:
+        frame = node.get("frame")
+        entry: dict[str, Any] = {
+            "index": node.get("element_index", ""),
+            "role": node.get("role"),
+            "label": node.get("title"),
+        }
+        if frame:
+            entry["frame"] = frame
+        elements.append(entry)
+        for child in node.get("children", []):
+            walk(child)
+
+    walk(tree)
+    return elements
+
+
+def _tool_analyze_screenshot(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+    from . import vision
+
+    do_ocr = args.get("ocr", True)
+    do_annotate = args.get("annotate", True)
+    app_name = args.get("app")
+
+    if app_name:
+        app_info = be.activate_or_launch_app(app_name)
+        pid = app_info.get("pid", 0)
+        tree = be.get_accessibility_tree(app_name, pid)
+        _types.LAST_APP = app_name
+    else:
+        tree = None
+        app_info = None
+
+    b64, w, h, method = be.capture_screenshot()
+    import base64 as _b64
+    screenshot_bytes = _b64.b64decode(b64)
+    _types.LAST_SCREENSHOT = screenshot_bytes
+
+    result_data: dict[str, Any] = {
+        "screen_size": {"width": w, "height": h},
+        "capture_method": method,
+    }
+
+    if app_info:
+        result_data["app"] = app_info
+
+    if do_ocr:
+        ocr_results = vision.ocr_extract(screenshot_bytes)
+        result_data["ocr"] = ocr_results
+
+    elements = _tree_to_elements(tree) if tree else []
+    if elements:
+        result_data["elements"] = elements
+        result_data["description"] = vision.describe_elements(elements)
+
+    content: list[dict[str, Any]] = [
+        {"type": "text", "text": pretty_json(result_data)}
+    ]
+
+    if do_annotate and elements:
+        annotated_bytes = vision.annotate_screenshot(screenshot_bytes, elements)
+        annotated_b64 = base64.b64encode(annotated_bytes).decode("ascii")
+        content.append({"type": "image", "data": annotated_b64, "mimeType": "image/png"})
+    else:
+        content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+
+    return {"content": content}
+
+
+def _tool_screenshot_diff(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+    from . import vision
+
+    before_b64 = args.get("before")
+    if not before_b64:
+        raise RuntimeError("'before' is required")
+
+    before_bytes = base64.b64decode(before_b64)
+    after_b64 = args.get("after")
+
+    if after_b64:
+        after_bytes = base64.b64decode(after_b64)
+    else:
+        b64, w, h, method = be.capture_screenshot()
+        after_bytes = base64.b64decode(b64)
+        _types.LAST_SCREENSHOT = after_bytes
+
+    threshold = float(args.get("threshold", 5.0))
+    result = vision.diff_screenshots(before_bytes, after_bytes, threshold=threshold)
+
+    content: list[dict[str, Any]] = [
+        {"type": "text", "text": pretty_json({
+            "changed": result["changed"],
+            "change_percent": result.get("change_percent", 0),
+            "regions": result["regions"],
+        })}
+    ]
+
+    if result.get("diff_image"):
+        diff_b64 = base64.b64encode(result["diff_image"]).decode("ascii")
+        content.append({"type": "image", "data": diff_b64, "mimeType": "image/png"})
+
+    return {"content": content}
+
+
 TOOL_HANDLERS: dict[str, Callable] = {
     "get_app_state": _tool_get_app_state,
     "list_apps": _tool_list_apps,
@@ -155,6 +281,8 @@ TOOL_HANDLERS: dict[str, Callable] = {
     "scroll": _tool_scroll,
     "set_value": _tool_set_value,
     "perform_secondary_action": _tool_perform_secondary_action,
+    "analyze_screenshot": _tool_analyze_screenshot,
+    "screenshot_diff": _tool_screenshot_diff,
 }
 
 
