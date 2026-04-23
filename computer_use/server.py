@@ -71,13 +71,14 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     app_name = args.get("app")
     if not app_name:
         raise RuntimeError("'app' is required")
+    max_depth = int(args.get("max_depth", 7))
     max_elements = int(args.get("max_elements", 220))
     include_screenshot = args.get("include_screenshot", True)
 
     app_info = be.activate_or_launch_app(app_name)
     pid = app_info.get("pid", 0)
 
-    tree = be.get_accessibility_tree(app_name, pid, max_elements=max_elements)
+    tree = be.get_accessibility_tree(app_name, pid, max_depth=max_depth, max_elements=max_elements)
     _types.LAST_APP = app_name
 
     content: list[dict[str, Any]] = [
