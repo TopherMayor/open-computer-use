@@ -1,0 +1,47 @@
+services:
+  contract-tests:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    working_dir: /repo
+    command: python3 -m pytest tests/test_mcp_contract.py -v
+    environment:
+      - GSD_CU_BACKEND=fake
+      - PYTHONPATH=/repo
+
+  desktop-tests:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    working_dir: /repo
+    command: >
+      bash -c "
+        Xvfb :99 -screen 0 1280x800x24 &
+        openbox &
+        dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
+        sleep 2
+        DISPLAY=:99 GSD_CU_BACKEND=linux-x11 python3 -m pytest tests/test_desktop_smoke.py -v
+      "
+    environment:
+      - DISPLAY=:99
+      - GSD_CU_BACKEND=linux-x11
+      - PYTHONPATH=/repo
+
+  novnc-debug:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    ports:
+      - "6080:6080"
+    working_dir: /repo
+    command: >
+      bash -c "
+        Xvfb :99 -screen 0 1280x800x24 &
+        openbox &
+        x11vnc -display :99 -forever -nopw &
+        novnc --listen 6080 &
+        dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
+        sleep infinity
+      "
+    environment:
+      - DISPLAY=:99
