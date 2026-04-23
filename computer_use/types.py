@@ -15,6 +15,7 @@ class CachedElement:
 
 ELEMENT_CACHE: dict[str, CachedElement] = {}
 LAST_APP: str | None = None
+LAST_SCREENSHOT: bytes = b""
 
 
 def clear_cache() -> None:
