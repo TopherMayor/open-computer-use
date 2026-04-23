@@ -187,11 +187,14 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             arguments = params.get("arguments") or {}
             if name not in TOOL_HANDLERS:
                 raise RuntimeError(f"Unknown tool: {name}")
-            tool_result = TOOL_HANDLERS[name](arguments, backend)
-            if "content" in tool_result:
-                result = tool_result
-            else:
-                result = ok_text(tool_result)
+            try:
+                tool_result = TOOL_HANDLERS[name](arguments, backend)
+                if "content" in tool_result:
+                    result = tool_result
+                else:
+                    result = ok_text(tool_result)
+            except Exception as exc:
+                result = error_result(str(exc))
         elif method == "resources/list":
             result = {"resources": []}
         elif method == "prompts/list":
