@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index as base_element_from_index, frame_center
-
+from ..types import ELEMENT_CACHE, CachedElement, clear_cache
+from ..types import element_from_index as base_element_from_index
+from .base import ComputerBackend
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
 
@@ -25,10 +26,11 @@ def _fake_element(index: int) -> CachedElement:
     )
 
 
-class FakeBackend:
+class FakeBackend(ComputerBackend):
     name = "fake"
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the fake backend with no active application."""
         self._app = None
 
     def list_apps(self, **kwargs) -> list[dict[str, Any]]:
@@ -48,40 +50,61 @@ class FakeBackend:
 
     def capture_screenshot(self) -> tuple[str, int, int, str]:
         import base64
-        import struct
-        import zlib
+        import io
+
+        from PIL import Image
 
         width, height = 1920, 1080
-        raw = b"\x00\x00\x00" * (width * height)
-        data = zlib.compress(raw)
-        b64 = base64.b64encode(data).decode("ascii")
+        img = Image.new("RGB", (width, height), (64, 64, 64))
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode("ascii")
         return b64, width, height, "fake"
 
     def get_accessibility_tree(self, app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
         max_elements = int(kwargs.get("max_elements", 10))
         clear_cache()
-        for i in range(min(max_elements, 10)):
+        _FAKE_ELEMENTS: list[dict[str, Any]] = [
+            {"role": "window", "title": app_name},
+            {"role": "button", "title": "Submit"},
+            {"role": "button", "title": "Cancel"},
+            {"role": "button", "title": "OK"},
+            {"role": "textfield", "title": "Username"},
+            {"role": "textfield", "title": "Password"},
+            {"role": "menu", "title": "File"},
+            {"role": "menu", "title": "Edit"},
+            {"role": "checkbox", "title": "Remember me"},
+            {"role": "link", "title": "Help"},
+            {"role": "tab", "title": "Settings"},
+            {"role": "button", "title": "Save"},
+            {"role": "button", "title": "Delete"},
+            {"role": "dialog", "title": "Confirm"},
+        ]
+        count = min(max_elements, len(_FAKE_ELEMENTS))
+        for i in range(count):
+            elem_def = _FAKE_ELEMENTS[i]
             index_str = str(i)
             ELEMENT_CACHE[index_str] = CachedElement(
                 element=None,
                 frame={
-                    "x": i * 10,
-                    "y": i * 10,
-                    "width": 100,
-                    "height": 50,
-                    "center_x": i * 10 + 50,
-                    "center_y": i * 10 + 25,
+                    "x": float(i * 120),
+                    "y": float(50 + i * 60),
+                    "width": 100.0,
+                    "height": 50.0,
+                    "center_x": float(i * 120 + 50),
+                    "center_y": float(50 + i * 60 + 25),
                 },
                 app=app_name,
-                role="button" if i > 0 else "window",
-                title=f"Element {i}" if i > 0 else app_name,
+                role=elem_def["role"],
+                title=elem_def["title"],
             )
-        tree = {"element_index": "0", "role": "window", "title": app_name, "children": []}
-        for i in range(1, min(max_elements, 10)):
+        tree: dict[str, Any] = {"element_index": "0", "role": "window", "title": app_name, "children": []}
+        for i in range(1, count):
+            elem_def = _FAKE_ELEMENTS[i]
             tree["children"].append({
                 "element_index": str(i),
-                "role": "button",
-                "title": f"Button {i}",
+                "role": elem_def["role"],
+                "title": elem_def["title"],
             })
         return tree
 
@@ -127,6 +150,16 @@ class FakeBackend:
     def element_from_index(self, index: str) -> Any:
         return _fake_element(int(index))
 
+    def ocr_extract(self, image_bytes: bytes) -> list[dict[str, Any]]:
+        return [{"text": "FakeApp", "x": 10, "y": 10, "width": 80, "height": 20, "confidence": 0.95}]
+
+    def annotate_screenshot(self, image_bytes: bytes, elements: list[dict[str, Any]]) -> bytes:
+        return image_bytes
+
+    def diff_screenshots(self, before_bytes: bytes, after_bytes: bytes, threshold: float = 5.0) -> dict[str, Any]:
+        return {"changed": False, "regions": [], "diff_image": b""}
+
 
 def create_backend() -> FakeBackend:
+    """Instantiate and return a FakeBackend for testing."""
     return FakeBackend()

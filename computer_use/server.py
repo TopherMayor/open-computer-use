@@ -4,10 +4,14 @@ import json
 import os
 import platform
 import traceback
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from . import SERVER_NAME, SERVER_VERSION
+from . import audit as _audit
+from . import safety as _safety
 from . import types as _types
+from .backends.input_utils import preserve_clipboard, restore_clipboard
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -65,19 +69,26 @@ def get_backend() -> Any:
 
 
 backend: Any = None
+_audit.configure(os.environ.get("GSD_CU_AUDIT_LOG"))
+_safety.configure_safety(
+    max_actions=int(os.environ.get("GSD_CU_MAX_ACTIONS", "0")),
+    max_per_minute=int(os.environ.get("GSD_CU_MAX_PER_MINUTE", "0")),
+)
 
 
 def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     app_name = args.get("app")
     if not app_name:
         raise RuntimeError("'app' is required")
+    max_depth = int(args.get("max_depth", 7))
     max_elements = int(args.get("max_elements", 220))
     include_screenshot = args.get("include_screenshot", True)
+    annotate = args.get("annotate_screenshot", False)
 
     app_info = be.activate_or_launch_app(app_name)
     pid = app_info.get("pid", 0)
 
-    tree = be.get_accessibility_tree(app_name, pid, max_elements=max_elements)
+    tree = be.get_accessibility_tree(app_name, pid, max_depth=max_depth, max_elements=max_elements)
     _types.LAST_APP = app_name
 
     content: list[dict[str, Any]] = [
@@ -85,12 +96,30 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     ]
     if include_screenshot:
         b64, w, h, method = be.capture_screenshot()
-        content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+        import base64
+        screenshot_bytes = base64.b64decode(b64)
+        _types.LAST_SCREENSHOT = screenshot_bytes
+
+        if annotate:
+            elements = _tree_to_elements(tree)
+            try:
+                from .vision import annotate_screenshot as _annotate
+                annotated_bytes = _annotate(screenshot_bytes, elements)
+                annotated_b64 = base64.b64encode(annotated_bytes).decode("ascii")
+                content.append({"type": "image", "data": annotated_b64, "mimeType": "image/png"})
+            except Exception:
+                content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+        else:
+            content.append({"type": "image", "data": b64, "mimeType": "image/png"})
     return {"content": content}
 
 
 def _tool_list_apps(args: dict[str, Any], be: Any) -> dict[str, Any]:
-    return {"apps": be.list_apps()}
+    return {"apps": be.list_apps(
+        include_recent=args.get("include_recent", True),
+        recent_days=int(args.get("recent_days", 14)),
+        include_installed=args.get("include_installed", False),
+    )}
 
 
 def _tool_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
@@ -121,7 +150,11 @@ def _tool_press_key(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _tool_type_text(args: dict[str, Any], be: Any) -> dict[str, Any]:
-    return be.type_text(args["text"])
+    saved = preserve_clipboard()
+    try:
+        return be.type_text(args["text"])
+    finally:
+        restore_clipboard(saved)
 
 
 def _tool_scroll(args: dict[str, Any], be: Any) -> dict[str, Any]:
@@ -133,11 +166,257 @@ def _tool_scroll(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _tool_set_value(args: dict[str, Any], be: Any) -> dict[str, Any]:
-    return be.set_value(args["element_index"], args["value"])
+    saved = preserve_clipboard()
+    try:
+        return be.set_value(args["element_index"], args["value"])
+    finally:
+        restore_clipboard(saved)
 
 
 def _tool_perform_secondary_action(args: dict[str, Any], be: Any) -> dict[str, Any]:
     return be.perform_action(args["element_index"], args["action"])
+
+
+def _tree_to_elements(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
+    elements = []
+    if not tree:
+        return elements
+
+    def walk(node: dict[str, Any]) -> None:
+        frame = node.get("frame")
+        entry: dict[str, Any] = {
+            "index": node.get("element_index", ""),
+            "role": node.get("role"),
+            "label": node.get("title"),
+        }
+        if frame:
+            entry["frame"] = frame
+        elements.append(entry)
+        for child in node.get("children", []):
+            walk(child)
+
+    walk(tree)
+    return elements
+
+
+def _tool_analyze_screenshot(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+
+    from . import vision
+
+    do_ocr = args.get("ocr", True)
+    do_annotate = args.get("annotate", True)
+    app_name = args.get("app")
+
+    if app_name:
+        app_info = be.activate_or_launch_app(app_name)
+        pid = app_info.get("pid", 0)
+        tree = be.get_accessibility_tree(app_name, pid)
+        _types.LAST_APP = app_name
+    else:
+        tree = None
+        app_info = None
+
+    b64, w, h, method = be.capture_screenshot()
+    screenshot_bytes = base64.b64decode(b64)
+    _types.LAST_SCREENSHOT = screenshot_bytes
+
+    result_data: dict[str, Any] = {
+        "screen_size": {"width": w, "height": h},
+        "capture_method": method,
+    }
+
+    if app_info:
+        result_data["app"] = app_info
+
+    if do_ocr:
+        ocr_results = vision.ocr_extract(screenshot_bytes)
+        result_data["ocr"] = ocr_results
+
+    elements = _tree_to_elements(tree) if tree else []
+    if elements:
+        result_data["elements"] = elements
+        result_data["description"] = vision.describe_elements(elements)
+
+    content: list[dict[str, Any]] = [
+        {"type": "text", "text": pretty_json(result_data)}
+    ]
+
+    if do_annotate and elements:
+        try:
+            annotated_bytes = vision.annotate_screenshot(screenshot_bytes, elements)
+            annotated_b64 = base64.b64encode(annotated_bytes).decode("ascii")
+            content.append({"type": "image", "data": annotated_b64, "mimeType": "image/png"})
+        except Exception:
+            content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+    else:
+        content.append({"type": "image", "data": b64, "mimeType": "image/png"})
+
+    return {"content": content}
+
+
+def _tool_screenshot_diff(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+
+    from . import vision
+
+    before_b64 = args.get("before")
+    if not before_b64:
+        raise RuntimeError("'before' is required")
+
+    before_bytes = base64.b64decode(before_b64)
+    after_b64 = args.get("after")
+
+    if after_b64:
+        after_bytes = base64.b64decode(after_b64)
+    else:
+        b64, w, h, method = be.capture_screenshot()
+        after_bytes = base64.b64decode(b64)
+        _types.LAST_SCREENSHOT = after_bytes
+
+    threshold = float(args.get("threshold", 5.0))
+    result = vision.diff_screenshots(before_bytes, after_bytes, threshold=threshold)
+
+    content: list[dict[str, Any]] = [
+        {"type": "text", "text": pretty_json({
+            "changed": result["changed"],
+            "change_percent": result.get("change_percent", 0),
+            "regions": result["regions"],
+        })}
+    ]
+
+    if result.get("diff_image"):
+        diff_b64 = base64.b64encode(result["diff_image"]).decode("ascii")
+        content.append({"type": "image", "data": diff_b64, "mimeType": "image/png"})
+
+    return {"content": content}
+
+
+def _tool_visual_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+
+    from . import matcher
+    from . import vision
+
+    description = args.get("description", "").strip()
+    if not description:
+        raise RuntimeError("'description' is required")
+    app_name = args.get("app")
+    match_strategy = args.get("match_strategy", "combined")
+    click_count = int(args.get("click_count", 1))
+    mouse_button = args.get("mouse_button", "left")
+
+    if app_name:
+        app_info = be.activate_or_launch_app(app_name)
+        pid = app_info.get("pid", 0)
+        be.get_accessibility_tree(app_name, pid)
+        _types.LAST_APP = app_name
+
+    b64, w, h, method = be.capture_screenshot()
+    screenshot_bytes = base64.b64decode(b64)
+    _types.LAST_SCREENSHOT = screenshot_bytes
+
+    ocr_results: list[dict[str, Any]] = []
+    if match_strategy in ("ocr", "combined", "auto"):
+        ocr_results = vision.ocr_extract(screenshot_bytes)
+
+    elements = _types.flat_elements()
+    matches = matcher.find_elements(
+        description,
+        elements=elements,
+        ocr_results=ocr_results,
+        match_strategy=match_strategy,
+        max_results=1,
+    )
+
+    if not matches:
+        return error_result(
+            "No matching element found for: " + description,
+            {"description": description, "strategy": match_strategy},
+        )
+
+    best = matches[0]
+    cx, cy = matcher.match_center(best)
+
+    click_result = be.click(
+        element_index=best.element_index if best.element_index else None,
+        x=cx,
+        y=cy,
+        mouse_button=mouse_button,
+        click_count=click_count,
+    )
+
+    return {
+        "clicked": True,
+        "match": {
+            "element_index": best.element_index,
+            "role": best.role,
+            "title": best.title,
+            "score": best.score,
+            "source": best.source,
+            "frame": best.frame,
+        },
+        "coordinates": {"x": cx, "y": cy},
+        "click_result": click_result,
+    }
+
+
+def _tool_visual_locate(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+
+    from . import matcher
+    from . import vision
+
+    description = args.get("description", "").strip()
+    if not description:
+        raise RuntimeError("'description' is required")
+    app_name = args.get("app")
+    match_strategy = args.get("match_strategy", "combined")
+    max_results = int(args.get("max_results", 5))
+
+    if app_name:
+        app_info = be.activate_or_launch_app(app_name)
+        pid = app_info.get("pid", 0)
+        be.get_accessibility_tree(app_name, pid)
+        _types.LAST_APP = app_name
+
+    b64, w, h, method = be.capture_screenshot()
+    screenshot_bytes = base64.b64decode(b64)
+    _types.LAST_SCREENSHOT = screenshot_bytes
+
+    ocr_results: list[dict[str, Any]] = []
+    if match_strategy in ("ocr", "combined", "auto"):
+        ocr_results = vision.ocr_extract(screenshot_bytes)
+
+    elements = _types.flat_elements()
+    matches = matcher.find_elements(
+        description,
+        elements=elements,
+        ocr_results=ocr_results,
+        match_strategy=match_strategy,
+        max_results=max_results,
+    )
+
+    match_list = []
+    for m in matches:
+        entry: dict[str, Any] = {
+            "element_index": m.element_index,
+            "role": m.role,
+            "title": m.title,
+            "score": m.score,
+            "source": m.source,
+            "frame": m.frame,
+        }
+        if m.ocr_text:
+            entry["ocr_text"] = m.ocr_text
+        match_list.append(entry)
+
+    return {
+        "matches": match_list,
+        "count": len(match_list),
+        "description": description,
+        "strategy": match_strategy,
+    }
 
 
 TOOL_HANDLERS: dict[str, Callable] = {
@@ -150,6 +429,10 @@ TOOL_HANDLERS: dict[str, Callable] = {
     "scroll": _tool_scroll,
     "set_value": _tool_set_value,
     "perform_secondary_action": _tool_perform_secondary_action,
+    "analyze_screenshot": _tool_analyze_screenshot,
+    "screenshot_diff": _tool_screenshot_diff,
+    "visual_click": _tool_visual_click,
+    "visual_locate": _tool_visual_locate,
 }
 
 
@@ -179,14 +462,33 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             result = {"tools": TOOLS}
         elif method == "tools/call":
             name = params.get("name")
+            if not name or name not in TOOL_HANDLERS:
+                _audit.log_action(str(name), {}, "error: unknown tool", error=f"Unknown tool: {name}")
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": error_result(f"Unknown tool: {name}"),
+                }
+            allowed, reason = _safety.check_action_allowed()
+            if not allowed:
+                _audit.log_action(name, {}, f"blocked: {reason}")
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": error_result(reason),
+                }
             arguments = params.get("arguments") or {}
-            if name not in TOOL_HANDLERS:
-                raise RuntimeError(f"Unknown tool: {name}")
-            tool_result = TOOL_HANDLERS[name](arguments, backend)
-            if "content" in tool_result:
-                result = tool_result
-            else:
-                result = ok_text(tool_result)
+            try:
+                tool_result = TOOL_HANDLERS[name](arguments, backend)
+                if "content" in tool_result:
+                    result = tool_result
+                else:
+                    result = ok_text(tool_result)
+                _safety.record_action()
+                _audit.log_action(name, arguments, "ok")
+            except Exception as exc:
+                result = error_result(str(exc))
+                _audit.log_action(name, arguments, "error", error=str(exc))
         elif method == "resources/list":
             result = {"resources": []}
         elif method == "prompts/list":
@@ -203,7 +505,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
         return {
             "jsonrpc": "2.0",
             "id": request_id,
-            "result": error_result(str(exc)),
+            "error": {"code": -32603, "message": f"Internal error: {exc}"},
         }
 
 
@@ -241,7 +543,6 @@ def self_test() -> int:
 
 
 def main() -> int:
-    import sys
     import argparse
 
     parser = argparse.ArgumentParser(description="Self-hosted Computer Use MCP server")

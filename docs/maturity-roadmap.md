@@ -1,5 +1,19 @@
 # Maturity Roadmap
 
+## Completed
+
+- [x] Architecture split: backend interface, macOS/Linux/fake backends, tool registry
+- [x] Container test lab: Docker Xvfb, fixture app, Linux X11 backend
+- [x] Structured JSONL audit log (`computer_use/audit.py`)
+- [x] Rate limiting and action budgets (`computer_use/safety.py`)
+- [x] Emergency stop signal (`GSD_CU_EMERGENCY_STOP_FILE`)
+- [x] Clipboard preservation (`backends/input_utils.py`)
+- [x] Lint + typecheck (ruff, mypy via `pyproject.toml`)
+- [x] Visual element targeting (`visual_click`, `visual_locate` tools)
+- [x] Video recording of Docker tests (ffmpeg + `run-and-record.sh`)
+- [x] OCR text extraction and screenshot annotation (`computer_use/vision.py`)
+- [x] Screenshot diff comparison (`screenshot_diff` tool)
+
 ## Goal
 
 Close the practical maturity gap between this independent local implementation and OpenAI's bundled native Computer Use plugin while keeping the project inspectable, self-hosted, and hackable.

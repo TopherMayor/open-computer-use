@@ -836,8 +836,8 @@ Think about what the user wants and plan the next action.""".format(sys_info=sys
     def run_task_sync(self, task: str) -> dict:
         """Synchronous wrapper for run_task."""
         try:
-            import nestyncio
-            nestyncio.apply()
+            import nest_asyncio
+            nest_asyncio.apply()
         except Exception:
             pass
 

@@ -3,20 +3,23 @@ services:
     build:
       context: ../..
       dockerfile: docker/desktop-test/Dockerfile
-    working_dir: /repo
-    command: python3 -m pytest tests/test_mcp_contract.py -v
+    working_dir: /home/testuser/repo
+    command: python3 -m pytest tests/test_mcp_contract.py tests/test_unit_coverage.py -v
     environment:
       - GSD_CU_BACKEND=fake
-      - PYTHONPATH=/repo
+      - PYTHONPATH=/home/testuser/repo
+    mem_limit: 512m
+    cpus: 1
 
   desktop-tests:
     build:
       context: ../..
       dockerfile: docker/desktop-test/Dockerfile
-    working_dir: /repo
+    working_dir: /home/testuser/repo
     command: >
       bash -c "
         Xvfb :99 -screen 0 1280x800x24 &
+        sleep 0.5
         openbox &
         dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
         sleep 2
@@ -25,7 +28,44 @@ services:
     environment:
       - DISPLAY=:99
       - GSD_CU_BACKEND=linux-x11
-      - PYTHONPATH=/repo
+      - PYTHONPATH=/home/testuser/repo
+    mem_limit: 1g
+    cpus: 2
+
+  desktop-tests-recorded:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    user: "0:0"
+    working_dir: /home/testuser/repo
+    command: >
+      bash -c "
+        mkdir -p /tmp/runtime-root
+        Xvfb :99 -screen 0 1280x800x24 &
+        sleep 0.5
+        openbox &
+        dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
+        sleep 2
+        ffmpeg -y -video_size 1280x800 -framerate 10 -f x11grab -i :99 -codec:v libx264 -preset ultrafast -tune zerolatency -crf 28 /home/testuser/repo/test-recordings/desktop-test.mp4 </dev/null >/tmp/ffmpeg.log 2>&1 &
+        FFMPEG_PID=$!
+        DISPLAY=:99 GSD_CU_BACKEND=linux-x11 python3 -m pytest tests/test_desktop_smoke.py -v
+        TEST_EXIT=$?
+        sleep 1
+        kill -INT $FFMPEG_PID 2>/dev/null
+        sleep 3
+        echo 'ffmpeg last lines:' && tail -3 /tmp/ffmpeg.log
+        ls -lh /home/testuser/repo/test-recordings/desktop-test.mp4
+        exit $TEST_EXIT
+      "
+    environment:
+      - DISPLAY=:99
+      - GSD_CU_BACKEND=linux-x11
+      - PYTHONPATH=/home/testuser/repo
+      - XDG_RUNTIME_DIR=/tmp/runtime-root
+    volumes:
+      - ../../test-recordings:/home/testuser/repo/test-recordings
+    mem_limit: 1g
+    cpus: 2
 
   novnc-debug:
     build:
@@ -33,10 +73,11 @@ services:
       dockerfile: docker/desktop-test/Dockerfile
     ports:
       - "6080:6080"
-    working_dir: /repo
+    working_dir: /home/testuser/repo
     command: >
       bash -c "
         Xvfb :99 -screen 0 1280x800x24 &
+        sleep 0.5
         openbox &
         x11vnc -display :99 -forever -nopw &
         novnc --listen 6080 &
@@ -45,3 +86,4 @@ services:
       "
     environment:
       - DISPLAY=:99
+    mem_limit: 1g

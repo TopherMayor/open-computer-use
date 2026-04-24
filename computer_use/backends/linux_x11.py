@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import os
-import platform
 import re
 import subprocess
 from typing import Any
 
-from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
-
+from ..types import ELEMENT_CACHE, CachedElement, clear_cache, element_from_index, frame_center
+from .base import ComputerBackend
+from .input_utils import (
+    KEY_ALIASES,
+    capture_screenshot_png,
+    normalize_button,
+    perform_drag,
+    perform_scroll,
+    require_pyautogui,
+)
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
 
@@ -24,18 +31,6 @@ def _get_display() -> str | None:
     return os.environ.get("DISPLAY")
 
 
-def require_pyautogui():
-    try:
-        import pyautogui  # type: ignore
-    except Exception as exc:
-        raise RuntimeError(
-            "pyautogui is required for desktop input. Run `pip install -r requirements-linux.txt`."
-        ) from exc
-
-    pyautogui.FAILSAFE = True
-    return pyautogui
-
-
 def _screen_size() -> dict[str, int]:
     try:
         pyautogui = require_pyautogui()
@@ -43,36 +38,6 @@ def _screen_size() -> dict[str, int]:
         return {"width": int(size[0]), "height": int(size[1])}
     except Exception:
         return SCREEN_SIZE.copy()
-
-
-def _capture_screenshot_png() -> tuple[str, int, int, str]:
-    try:
-        import pyautogui  # type: ignore
-        import io
-        import base64
-        from PIL import Image
-
-        image = pyautogui.screenshot()
-        buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
-        return base64.b64encode(buffer.getvalue()).decode("ascii"), image.width, image.height, "pyautogui"
-    except Exception:
-        pass
-
-    try:
-        import mss  # type: ignore
-        import mss.tools  # type: ignore
-        import base64
-
-        with mss.mss() as sct:
-            monitor = sct.monitors[0]
-            sct_img = sct.grab(monitor)
-            data = mss.tools.to_png(sct_img.rgb, sct_img.size)
-            return base64.b64encode(data).decode("ascii"), sct_img.width, sct_img.height, "mss"
-    except Exception as exc:
-        raise RuntimeError(
-            "Could not capture a screenshot. Install pyautogui or mss and ensure DISPLAY is set."
-        ) from exc
 
 
 def _list_apps() -> list[dict[str, Any]]:
@@ -87,7 +52,7 @@ def _list_apps() -> list[dict[str, Any]]:
                     wid = parts[0]
                     pid = int(parts[2])
                     name = " ".join(parts[3:])
-                    if pid and name:
+                    if pid is not None and name:
                         if pid not in apps:
                             apps[pid] = {
                                 "name": name,
@@ -143,12 +108,12 @@ def _find_running_app(app_name: str) -> dict[str, Any] | None:
     apps = _list_apps()
     for app in apps:
         name = str(app.get("name") or "").lower()
-        if needle in name:
+        if needle == name:
             return app
 
     for app in apps:
         name = str(app.get("name") or "").lower()
-        if needle in name:
+        if needle in name or name in needle:
             return app
 
     return None
@@ -157,7 +122,7 @@ def _find_running_app(app_name: str) -> dict[str, Any] | None:
 def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
     app = _find_running_app(app_name)
     if app is not None:
-        windows = app.get("windows") if app.get("windows") else [None]
+        windows = app.get("windows") or [None]
         _activate_app(windows)
         code, _, _ = _run(["wmctrl", "-a", app_name])
         if code != 0:
@@ -175,9 +140,13 @@ def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
     if not executable:
         executable = app_name
 
-    code, _, stderr = _run(["sh", "-c", f"{executable} &"])
-    if code != 0 and stderr:
-        raise RuntimeError(f"Could not launch app {app_name!r}: {stderr}")
+    try:
+        subprocess.Popen([executable], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        raise RuntimeError(f"Could not launch app {app_name!r}: executable {executable!r} not found")
+    except Exception as exc:
+        raise RuntimeError(f"Could not launch app {app_name!r}: {exc}")
 
     import time
     time.sleep(0.8)
@@ -215,36 +184,6 @@ def _activate_app(windows: list[str | None]) -> str | None:
         if code == 0:
             return wid
     return None
-
-
-def normalize_button(button: str) -> str:
-    button = (button or "left").lower()
-    if button not in {"left", "right", "middle"}:
-        raise RuntimeError("mouse_button must be one of: left, right, middle")
-    return button
-
-
-KEY_ALIASES = {
-    "return": "enter",
-    "enter": "enter",
-    "escape": "esc",
-    "esc": "esc",
-    "space": "space",
-    "tab": "tab",
-    "backspace": "backspace",
-    "delete": "delete",
-    "del": "delete",
-    "up": "up",
-    "down": "down",
-    "left": "left",
-    "right": "right",
-    "home": "home",
-    "end": "end",
-    "page_up": "pageup",
-    "pageup": "pageup",
-    "page_down": "pagedown",
-    "pagedown": "pagedown",
-}
 
 
 def normalize_key_token(token: str) -> str:
@@ -427,7 +366,7 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
 
         try:
             children = el.get_children() if hasattr(el, "get_children") else []
-            if children and len(children) > 0:
+            if children:
                 node["children"] = []
                 for child in children:
                     add_element(child, node["children"], depth + 1)
@@ -559,10 +498,10 @@ def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, 
     return {"element_index": "0", "role": "window", "title": app_name, "children": children}
 
 
-class LinuxX11Backend:
+class LinuxX11Backend(ComputerBackend):
     name = "linux-x11"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._app = None
 
     def list_apps(self, **kwargs) -> list[dict[str, Any]]:
@@ -580,7 +519,7 @@ class LinuxX11Backend:
         return _launch_or_activate_app(app_name)
 
     def capture_screenshot(self) -> tuple[str, int, int, str]:
-        return _capture_screenshot_png()
+        return capture_screenshot_png()
 
     def get_accessibility_tree(self, app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
         return _get_accessibility_tree(app_name, pid, **kwargs)
@@ -616,9 +555,7 @@ class LinuxX11Backend:
 
     def drag(self, from_x: int, from_y: int, to_x: int, to_y: int, **kwargs) -> dict[str, Any]:
         duration = float(kwargs.get("duration", 0.35))
-        pyautogui = require_pyautogui()
-        pyautogui.moveTo(from_x, from_y)
-        pyautogui.dragTo(to_x, to_y, duration=duration, button="left")
+        perform_drag(from_x, from_y, to_x, to_y, duration=duration)
         return {"success": True, "from": [from_x, from_y], "to": [to_x, to_y], "duration": duration}
 
     def press_key(self, key: str, **kwargs) -> dict[str, Any]:
@@ -635,31 +572,7 @@ class LinuxX11Backend:
         pages = float(pages)
         cached = element_from_index(element_index)
         x, y = frame_center(cached.frame)
-        pyautogui = require_pyautogui()
-        pyautogui.moveTo(x, y)
-
-        units = max(1, int(round(7 * pages)))
-        if direction == "up":
-            pyautogui.scroll(units, x=x, y=y)
-        elif direction == "down":
-            pyautogui.scroll(-units, x=x, y=y)
-        elif direction == "left":
-            if hasattr(pyautogui, "hscroll"):
-                pyautogui.hscroll(-units, x=x, y=y)
-            else:
-                pyautogui.keyDown("shift")
-                pyautogui.scroll(units, x=x, y=y)
-                pyautogui.keyUp("shift")
-        elif direction == "right":
-            if hasattr(pyautogui, "hscroll"):
-                pyautogui.hscroll(units, x=x, y=y)
-            else:
-                pyautogui.keyDown("shift")
-                pyautogui.scroll(-units, x=x, y=y)
-                pyautogui.keyUp("shift")
-        else:
-            raise RuntimeError("direction must be one of: up, down, left, right")
-
+        perform_scroll(x, y, direction, pages)
         return {"success": True, "element_index": element_index, "direction": direction, "pages": pages}
 
     def set_value(self, element_index: str, value: str, **kwargs) -> dict[str, Any]:

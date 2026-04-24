@@ -10,6 +10,7 @@ pynput>=1.7.0         # Additional input handling
 pillow>=10.0.0        # Image processing
 numpy>=1.24.0         # Numerical operations
 pyperclip>=1.8.0      # Clipboard fallback for larger text input
+pytesseract>=0.3.10   # OCR text extraction from screenshots
 
 # For async support (included with Python 3.10+)
 # asyncio is built-in

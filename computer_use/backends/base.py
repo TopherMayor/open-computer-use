@@ -52,3 +52,12 @@ class ComputerBackend(ABC):
 
     @abstractmethod
     def element_from_index(self, index: str) -> Any: ...
+
+    def ocr_extract(self, image_bytes: bytes) -> list[dict[str, Any]]:
+        return []
+
+    def annotate_screenshot(self, image_bytes: bytes, elements: list[dict[str, Any]]) -> bytes:
+        return image_bytes
+
+    def diff_screenshots(self, before_bytes: bytes, after_bytes: bytes, threshold: float = 5.0) -> dict[str, Any]:
+        return {"changed": False, "regions": [], "diff_image": b""}
