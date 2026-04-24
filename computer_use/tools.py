@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 DEFAULT_MAX_DEPTH = 7
-DEFAULT_MAX_ELEMENTS = 220
+DEFAULT_MAX_ELEMENTS = 200
 
 
 TOOLS: list[dict[str, Any]] = [
@@ -24,6 +24,11 @@ TOOLS: list[dict[str, Any]] = [
                     "type": "boolean",
                     "default": False,
                     "description": "Draw numbered bounding boxes on the screenshot using accessibility tree elements.",
+                },
+                "filter": {
+                    "type": "string",
+                    "enum": ["interactive", "text"],
+                    "description": "Filter elements: 'interactive' for actionable roles only, 'text' for elements with non-empty text/value.",
                 },
             },
             "required": ["app"],

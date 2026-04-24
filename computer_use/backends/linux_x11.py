@@ -6,7 +6,7 @@ import re
 import subprocess
 from typing import Any
 
-from ..types import ELEMENT_CACHE, CachedElement, clear_cache, element_from_index, frame_center
+from ..types import ELEMENT_CACHE, CachedElement, clear_cache, element_from_index, frame_center, generate_role_summary, is_visible
 from .base import ComputerBackend
 from .input_utils import (
     KEY_ALIASES,
@@ -248,26 +248,37 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
     except Exception:
         return _fallback_accessibility_tree(app_name, max_elements)
 
-    with contextlib.suppress(Exception):
+    try:
         Atspi.set_timeout(2000)
+    except Exception:
+        pass
 
     desktop = Atspi.get_desktop(0)
     if desktop is None:
         return _fallback_accessibility_tree(app_name, max_elements)
 
+    screen = _screen_size()
+    screen_w, screen_h = screen["width"], screen["height"]
+
     tree = {
         "element_index": "0",
         "role": "window",
         "title": app_name,
+        "path": "window",
+        "role_summary": "window",
+        "visible": True,
         "children": [],
     }
 
     ELEMENT_CACHE.clear()
     element_index = 0
+    was_truncated = False
 
-    def add_element(el: Any, parent_children: list, depth: int = 0) -> None:
-        nonlocal element_index
+    def add_element(el: Any, parent_children: list, depth: int = 0, parent_path: str = "") -> None:
+        nonlocal element_index, was_truncated
         if depth > 7 or element_index >= max_elements:
+            if element_index >= max_elements:
+                was_truncated = True
             return
 
         try:
@@ -280,16 +291,25 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             name = None
 
         desc = None
-        with contextlib.suppress(Exception):
+        try:
             desc = el.get_description() if hasattr(el, "get_description") else None
+        except Exception:
+            pass
 
         val = None
-        with contextlib.suppress(Exception):
+        try:
             val = Atspi.Value.get_value(el) if hasattr(el, "get_value") else None
+        except Exception:
+            pass
+
+        states = None
+        try:
+            states = el.get_state_set() if hasattr(el, "get_state_set") else None
+        except Exception:
+            pass
 
         enabled = None
         try:
-            states = el.get_state_set() if hasattr(el, "get_state_set") else None
             if states is not None:
                 enabled = states.contains(Atspi.StateType.ENABLED)
         except Exception:
@@ -299,6 +319,13 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
         try:
             if states is not None:
                 focused = states.contains(Atspi.StateType.FOCUSED)
+        except Exception:
+            pass
+
+        checked = None
+        try:
+            if states is not None:
+                checked = states.contains(Atspi.StateType.CHECKED)
         except Exception:
             pass
 
@@ -338,7 +365,15 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             title=str(name) if name else None,
         )
 
-        node: dict[str, Any] = {"element_index": index_str}
+        role_str = str(role) if role else "unknown"
+        current_path = f"{parent_path}/{role_str}" if parent_path else role_str
+
+        node: dict[str, Any] = {
+            "element_index": index_str,
+            "path": current_path,
+            "role_summary": generate_role_summary(role_str, name, value=val, checked=checked),
+            "visible": is_visible(frame, screen_w, screen_h),
+        }
         fields = {
             "role": role,
             "title": name,
@@ -346,6 +381,7 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             "value": val,
             "enabled": enabled,
             "focused": focused,
+            "checked": checked,
             "frame": frame,
         }
         for key, value in fields.items():
@@ -359,7 +395,7 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             if children:
                 node["children"] = []
                 for child in children:
-                    add_element(child, node["children"], depth + 1)
+                    add_element(child, node["children"], depth + 1, current_path)
         except Exception:
             pass
 
@@ -378,11 +414,15 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             if name and app_name.lower() in name.lower():
                 for window in app.get_windows():
                     if window:
-                        add_element(window, tree["children"], 0)
+                        add_element(window, tree["children"], 0, "window")
                         break
                 break
     except Exception:
         pass
+
+    if was_truncated:
+        tree["_truncated"] = True
+        tree["_total_elements"] = element_index
 
     return tree
 
@@ -449,18 +489,27 @@ def _merge_app_lists(running: list[dict[str, Any]], installed: list[dict[str, An
 def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, Any]:
     code, stdout, _ = _run(["wmctrl", "-l"])
     if code != 0:
-        return {"element_index": "0", "role": "window", "title": app_name, "children": []}
+        return {
+            "element_index": "0", "role": "window", "title": app_name,
+            "path": "window", "role_summary": "window", "visible": True, "children": [],
+        }
+
+    screen = _screen_size()
+    screen_w, screen_h = screen["width"], screen["height"]
 
     ELEMENT_CACHE.clear()
+    root_frame = {"x": 0, "y": 0, "width": 1920, "height": 1080, "center_x": 960, "center_y": 540}
     ELEMENT_CACHE["0"] = CachedElement(
         element=None,
-        frame={"x": 0, "y": 0, "width": 1920, "height": 1080, "center_x": 960, "center_y": 540},
+        frame=root_frame,
         app=app_name, role="window", title=app_name,
     )
 
     children = []
+    was_truncated = False
     for i, line in enumerate(stdout.splitlines()):
         if i + 1 >= max_elements:
+            was_truncated = True
             break
         parts = line.split(None, 3)
         if len(parts) >= 4:
@@ -478,17 +527,33 @@ def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, 
                         geo[k.strip()] = v.strip()
                 if all(k in geo for k in ("X", "Y", "WIDTH", "HEIGHT")):
                     gx, gy, gw, gh = int(geo["X"]), int(geo["Y"]), int(geo["WIDTH"]), int(geo["HEIGHT"])
-                    frame = {
-                        "x": gx, "y": gy, "width": gw, "height": gh,
-                        "center_x": gx + gw / 2, "center_y": gy + gh / 2,
-                    }
+                    frame = {"x": gx, "y": gy, "width": gw, "height": gh, "center_x": gx + gw / 2, "center_y": gy + gh / 2}
 
             ELEMENT_CACHE[index_str] = CachedElement(
                 element=None, frame=frame, app=app_name, role="window", title=title,
             )
-            children.append({"element_index": index_str, "role": "window", "title": title})
+            children.append({
+                "element_index": index_str,
+                "role": "window",
+                "title": title,
+                "path": "window/window",
+                "role_summary": generate_role_summary("window", title),
+                "visible": is_visible(frame, screen_w, screen_h),
+            })
 
-    return {"element_index": "0", "role": "window", "title": app_name, "children": children}
+    tree: dict[str, Any] = {
+        "element_index": "0",
+        "role": "window",
+        "title": app_name,
+        "path": "window",
+        "role_summary": "window",
+        "visible": is_visible(root_frame, screen_w, screen_h),
+        "children": children,
+    }
+    if was_truncated:
+        tree["_truncated"] = True
+        tree["_total_elements"] = 1 + len(children)
+    return tree
 
 
 class LinuxX11Backend(ComputerBackend):

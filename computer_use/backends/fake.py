@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..types import ELEMENT_CACHE, CachedElement, clear_cache
+from ..types import ELEMENT_CACHE, CachedElement, clear_cache, generate_role_summary, is_visible
 from ..types import element_from_index as base_element_from_index
 from .base import ComputerBackend
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
+SCREEN_W, SCREEN_H = 1920, 1080
 
 
 def _fake_element(index: int) -> CachedElement:
@@ -79,33 +80,71 @@ class FakeBackend(ComputerBackend):
             {"role": "button", "title": "Save"},
             {"role": "button", "title": "Delete"},
             {"role": "dialog", "title": "Confirm"},
+            {"role": "radio", "title": "Option A"},
+            {"role": "slider", "title": "Volume"},
+            {"role": "menuitem", "title": "New File"},
         ]
-        count = min(max_elements, len(_FAKE_ELEMENTS))
+        total_available = len(_FAKE_ELEMENTS)
+        count = min(max_elements, total_available)
         for i in range(count):
             elem_def = _FAKE_ELEMENTS[i]
             index_str = str(i)
+            frame = {
+                "x": float(min(i * 120, SCREEN_W - 110)),
+                "y": float(min(50 + i * 60, SCREEN_H - 60)),
+                "width": 100.0,
+                "height": 50.0,
+                "center_x": float(i * 120 + 50),
+                "center_y": float(50 + i * 60 + 25),
+            }
             ELEMENT_CACHE[index_str] = CachedElement(
                 element=None,
-                frame={
-                    "x": float(i * 120),
-                    "y": float(50 + i * 60),
-                    "width": 100.0,
-                    "height": 50.0,
-                    "center_x": float(i * 120 + 50),
-                    "center_y": float(50 + i * 60 + 25),
-                },
+                frame=frame,
                 app=app_name,
                 role=elem_def["role"],
                 title=elem_def["title"],
             )
-        tree: dict[str, Any] = {"element_index": "0", "role": "window", "title": app_name, "children": []}
+        root_role = _FAKE_ELEMENTS[0]["role"]
+        root_title = _FAKE_ELEMENTS[0]["title"]
+        root_path = root_role
+        tree: dict[str, Any] = {
+            "element_index": "0",
+            "role": root_role,
+            "title": root_title,
+            "path": root_path,
+            "role_summary": generate_role_summary(root_role, root_title),
+            "visible": is_visible(
+                {
+                    "x": 0.0, "y": 0.0, "width": 100.0, "height": 50.0,
+                    "center_x": 50.0, "center_y": 25.0,
+                },
+                SCREEN_W, SCREEN_H,
+            ),
+            "children": [],
+        }
         for i in range(1, count):
             elem_def = _FAKE_ELEMENTS[i]
+            child_path = f"{root_path}/{elem_def['role']}"
             tree["children"].append({
                 "element_index": str(i),
                 "role": elem_def["role"],
                 "title": elem_def["title"],
+                "path": child_path,
+                "role_summary": generate_role_summary(elem_def["role"], elem_def["title"]),
+                "visible": is_visible(
+                    {
+                        "x": float(min(i * 120, SCREEN_W - 110)),
+                        "y": float(min(50 + i * 60, SCREEN_H - 60)),
+                        "width": 100.0, "height": 50.0,
+                        "center_x": float(min(i * 120, SCREEN_W - 110) + 50),
+                        "center_y": float(min(50 + i * 60, SCREEN_H - 60) + 25),
+                    },
+                    SCREEN_W, SCREEN_H,
+                ),
             })
+        if total_available > max_elements:
+            tree["_truncated"] = True
+            tree["_total_elements"] = total_available
         return tree
 
     def click(self, element_index: str | None, x: int | None, y: int | None, **kwargs) -> dict[str, Any]:

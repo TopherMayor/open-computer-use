@@ -94,6 +94,10 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     _save_tree_snapshot(tree)
     _types.LAST_APP = app_name
 
+    filter_type = args.get("filter")
+    if filter_type:
+        tree = _types.filter_tree(tree, filter_type)
+
     content: list[dict[str, Any]] = [
         {"type": "text", "text": pretty_json({"app": app_info, "accessibility_tree": tree})}
     ]
