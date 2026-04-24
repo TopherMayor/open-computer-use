@@ -224,3 +224,48 @@ The Docker test environment is considered useful when a contributor can run one 
 4. Executes all tool scenarios.
 5. Saves screenshots and JSONL traces for failures.
 6. Exits nonzero on regression.
+
+## Video Recording
+
+The Docker image includes `ffmpeg` for recording the Xvfb display during test execution. This produces MP4 video artifacts that serve as visual verification of test runs.
+
+### How It Works
+
+1. `ffmpeg` records the `:99` X11 display using `x11grab` at 10 fps
+2. The video is encoded as H.264 (`libx264`, preset `fast`, CRF 28)
+3. Output is saved to `/home/testuser/repo/test-recordings/desktop-test.mp4`
+4. This directory is mounted as a Docker volume to `./test-recordings/` on the host
+
+### Usage
+
+```bash
+# Run tests with video recording
+./docker/desktop-test/run-and-record.sh
+```
+
+The script builds the `desktop-tests-recorded` Docker service, runs the desktop smoke tests with ffmpeg recording, and reports artifact locations.
+
+### Docker Compose Service
+
+The `desktop-tests-recorded` service in `docker/desktop-test/docker-compose.yml` extends the standard `desktop-tests` service with:
+
+- ffmpeg background process recording the display
+- Volume mount for the `test-recordings/` directory
+- Test process followed by ffmpeg cleanup (`kill` + `wait`)
+
+### Artifacts
+
+| Artifact | Location | Description |
+|----------|----------|-------------|
+| `desktop-test.mp4` | `test-recordings/` | Full video of the test run |
+| `*_failure.png` | `test-recordings/` | Screenshots captured on test failure (via `conftest.py`) |
+
+Video files are excluded from git via `.gitignore` (`test-recordings/*.mp4`).
+
+### Infrastructure Tests
+
+`tests/test_recording.py` validates the recording infrastructure without Docker:
+
+- Docker compose config is valid and contains ffmpeg command
+- `run-and-record.sh` exists and is executable
+- `test-recordings/` directory can be created

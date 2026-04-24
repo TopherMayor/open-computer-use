@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     tesseract-ocr-eng \
     curl \
     ca-certificates \
+    ffmpeg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home --shell /bin/bash testuser

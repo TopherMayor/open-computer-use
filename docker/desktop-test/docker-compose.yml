@@ -32,6 +32,33 @@ services:
     mem_limit: 1g
     cpus: 2
 
+  desktop-tests-recorded:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    working_dir: /home/testuser/repo
+    command: >
+      bash -c "
+        Xvfb :99 -screen 0 1280x800x24 &
+        sleep 0.5
+        openbox &
+        dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
+        sleep 2
+        ffmpeg -y -video_size 1280x800 -framerate 10 -f x11grab -i :99 -codec:v libx264 -preset fast -crf 28 /home/testuser/repo/test-recordings/desktop-test.mp4 &
+        FFMPEG_PID=$!
+        DISPLAY=:99 GSD_CU_BACKEND=linux-x11 python3 -m pytest tests/test_desktop_smoke.py -v
+        kill $FFMPEG_PID 2>/dev/null
+        wait $FFMPEG_PID 2>/dev/null
+      "
+    environment:
+      - DISPLAY=:99
+      - GSD_CU_BACKEND=linux-x11
+      - PYTHONPATH=/home/testuser/repo
+    volumes:
+      - ../../test-recordings:/home/testuser/repo/test-recordings
+    mem_limit: 1g
+    cpus: 2
+
   novnc-debug:
     build:
       context: ../..
