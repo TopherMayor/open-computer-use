@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from computer_use.types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
+from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache
 
 
 @pytest.fixture(autouse=True)
@@ -438,17 +438,15 @@ class TestSetValue:
 
 class TestListApps:
     def test_list_apps_with_installed(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
-
         from computer_use.backends import linux_x11
+        from computer_use.backends.linux_x11 import LinuxX11Backend
         with patch.object(linux_x11, "_installed_linux_apps", return_value=[
             {"name": "Test App", "running": False, "source": "desktop-file"},
+        ]), patch.object(linux_x11, "_list_apps", return_value=[
+            {"name": "RunningApp", "running": True, "source": "wmctrl"},
         ]):
-            with patch.object(linux_x11, "_list_apps", return_value=[
-                {"name": "RunningApp", "running": True, "source": "wmctrl"},
-            ]):
-                backend = LinuxX11Backend()
-                result = backend.list_apps(include_installed=True)
+            backend = LinuxX11Backend()
+            result = backend.list_apps(include_installed=True)
 
         names = [a["name"] for a in result]
         assert "Test App" in names
@@ -457,9 +455,8 @@ class TestListApps:
         assert test_app.get("running") is False
 
     def test_list_apps_without_installed(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
-
         from computer_use.backends import linux_x11
+        from computer_use.backends.linux_x11 import LinuxX11Backend
         with patch.object(linux_x11, "_list_apps", return_value=[
             {"name": "RunningApp", "running": True, "source": "wmctrl"},
         ]):

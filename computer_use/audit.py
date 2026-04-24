@@ -1,7 +1,7 @@
 """Structured JSONL audit logging for desktop actions."""
 from __future__ import annotations
+
 import json
-import os
 import time
 from typing import Any
 

@@ -51,7 +51,6 @@ def require_pyautogui() -> Any:
 def capture_screenshot_png() -> tuple[str, int, int, str]:
     """Capture the screen and return base64 PNG, width, height, and method used."""
     try:
-        from PIL import Image
 
         pyautogui = require_pyautogui()
         image = pyautogui.screenshot()

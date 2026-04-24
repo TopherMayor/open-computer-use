@@ -13,8 +13,7 @@ _IS_FAKE = os.environ.get("GSD_CU_BACKEND", "fake") == "fake"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from computer_use.server import handle_request, self_test
-from computer_use.types import CachedElement, ELEMENT_CACHE, clear_cache
-
+from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache
 
 requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 

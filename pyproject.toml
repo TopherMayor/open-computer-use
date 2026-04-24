@@ -20,7 +20,15 @@ markers = [
     "requires_fake: test only works with the fake backend (skipped with real backends)",
 ]
 
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
+ignore_missing_imports = true

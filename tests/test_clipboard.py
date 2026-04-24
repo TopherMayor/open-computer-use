@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from computer_use.backends.input_utils import preserve_clipboard, restore_clipboard
 
@@ -56,8 +54,8 @@ class TestClipboardIntegration:
             mock_pc.copy.assert_called_with("original")
 
     def test_set_value_preserves_clipboard(self):
-        from computer_use.server import handle_request
         from computer_use import types
+        from computer_use.server import handle_request
         types.ELEMENT_CACHE["5"] = types.CachedElement(
             element=None, frame={"center_x": 100.0, "center_y": 200.0}, app="Test"
         )

@@ -4,7 +4,8 @@ import json
 import os
 import platform
 import traceback
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from . import SERVER_NAME, SERVER_VERSION
 from . import audit as _audit
@@ -200,6 +201,7 @@ def _tree_to_elements(tree: dict[str, Any] | None) -> list[dict[str, Any]]:
 
 def _tool_analyze_screenshot(args: dict[str, Any], be: Any) -> dict[str, Any]:
     import base64
+
     from . import vision
 
     do_ocr = args.get("ocr", True)
@@ -255,6 +257,7 @@ def _tool_analyze_screenshot(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 def _tool_screenshot_diff(args: dict[str, Any], be: Any) -> dict[str, Any]:
     import base64
+
     from . import vision
 
     before_b64 = args.get("before")
@@ -411,7 +414,6 @@ def self_test() -> int:
 
 
 def main() -> int:
-    import sys
     import argparse
 
     parser = argparse.ArgumentParser(description="Self-hosted Computer Use MCP server")

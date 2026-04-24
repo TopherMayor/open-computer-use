@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 DEFAULT_MAX_DEPTH = 7
 DEFAULT_MAX_ELEMENTS = 220
 

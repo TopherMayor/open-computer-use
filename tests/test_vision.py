@@ -39,7 +39,6 @@ def clean_state():
 
 class TestOCRExtract:
     def test_ocr_with_mock_tesseract(self):
-        from computer_use.vision import ocr_extract
         img_bytes = _make_png()
 
         mock_ts = MagicMock()
@@ -55,6 +54,7 @@ class TestOCRExtract:
         mock_ts.image_to_data.return_value = mock_data
         with patch.dict("sys.modules", {"pytesseract": mock_ts}):
             import importlib
+
             import computer_use.vision as vis
             importlib.reload(vis)
             results = vis.ocr_extract(img_bytes)
@@ -68,10 +68,10 @@ class TestOCRExtract:
         assert results[1]["confidence"] == 0.88
 
     def test_ocr_import_error_returns_empty(self):
-        from computer_use.vision import ocr_extract
         img_bytes = _make_png()
         with patch.dict("sys.modules", {"pytesseract": None}):
             import importlib
+
             import computer_use.vision
             importlib.reload(computer_use.vision)
             result = computer_use.vision.ocr_extract(img_bytes)
@@ -90,8 +90,9 @@ class TestOCRExtract:
 
 class TestAnnotateScreenshot:
     def test_annotate_draws_boxes(self):
-        from computer_use.vision import annotate_screenshot
         from PIL import Image
+
+        from computer_use.vision import annotate_screenshot
 
         img_bytes = _make_png(200, 200, (255, 255, 255))
         elements = [
@@ -112,8 +113,8 @@ class TestAnnotateScreenshot:
         assert len(result) > 0
 
     def test_annotate_color_coding_by_role(self):
+
         from computer_use.vision import annotate_screenshot
-        from PIL import Image
 
         img_bytes = _make_png(300, 300, (255, 255, 255))
         elements = [
@@ -163,9 +164,10 @@ class TestDiffScreenshots:
         assert result["diff_image"] != b""
 
     def test_small_change_below_threshold(self):
-        from computer_use.vision import diff_screenshots
-        from PIL import Image
         import numpy as np
+        from PIL import Image
+
+        from computer_use.vision import diff_screenshots
 
         before_arr = np.full((100, 100, 3), 128, dtype=np.uint8)
         after_arr = before_arr.copy()

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index as base_element_from_index, frame_center
+from ..types import ELEMENT_CACHE, CachedElement, clear_cache
+from ..types import element_from_index as base_element_from_index
 from .base import ComputerBackend
-
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
 

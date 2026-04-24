@@ -9,8 +9,8 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from computer_use.server import handle_request, json_dumps, ok_text, error_result, pretty_json
-from computer_use.types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
+from computer_use.server import error_result, handle_request, json_dumps, ok_text, pretty_json
+from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache, element_from_index, frame_center
 
 
 @pytest.fixture(autouse=True)
@@ -319,8 +319,7 @@ class TestLinuxScrollDirections:
             app="TestApp", role="scroll", title="List",
         )
         mock_pag = MagicMock()
-        from computer_use.backends import linux_x11
-        from computer_use.backends import input_utils
+        from computer_use.backends import input_utils, linux_x11
         with patch.object(input_utils, "require_pyautogui", return_value=mock_pag):
             with patch.object(linux_x11, "element_from_index") as mock_efi:
                 mock_efi.return_value = ELEMENT_CACHE["1"]
@@ -337,8 +336,7 @@ class TestLinuxScrollDirections:
             app="TestApp", role="scroll", title="List",
         )
         mock_pag = MagicMock()
-        from computer_use.backends import linux_x11
-        from computer_use.backends import input_utils
+        from computer_use.backends import input_utils, linux_x11
         with patch.object(input_utils, "require_pyautogui", return_value=mock_pag):
             with patch.object(linux_x11, "element_from_index") as mock_efi:
                 mock_efi.return_value = ELEMENT_CACHE["1"]

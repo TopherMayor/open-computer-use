@@ -5,10 +5,16 @@ import re
 import subprocess
 from typing import Any
 
-from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
+from ..types import ELEMENT_CACHE, CachedElement, clear_cache, element_from_index, frame_center
 from .base import ComputerBackend
-from .input_utils import KEY_ALIASES, normalize_button, require_pyautogui, capture_screenshot_png, perform_scroll, perform_drag
-
+from .input_utils import (
+    KEY_ALIASES,
+    capture_screenshot_png,
+    normalize_button,
+    perform_drag,
+    perform_scroll,
+    require_pyautogui,
+)
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
 

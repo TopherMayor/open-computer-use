@@ -34,8 +34,8 @@ def _role_color(role: str | None) -> tuple[int, int, int]:
 def ocr_extract(image_bytes: bytes) -> list[dict[str, Any]]:
     """Run Tesseract OCR on image bytes and return detected text blocks."""
     try:
-        from PIL import Image
         import pytesseract
+        from PIL import Image
     except ImportError:
         return []
 

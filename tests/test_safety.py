@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 import time
 
-import pytest
-
 from computer_use import safety
 from computer_use.safety import ActionBudget, RateLimiter
 

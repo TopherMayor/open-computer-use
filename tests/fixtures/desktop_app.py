@@ -6,7 +6,7 @@ import sys
 try:
     import gi
     gi.require_version("Gtk", "3.0")
-    from gi.repository import Gtk, Gdk
+    from gi.repository import Gdk, Gtk
 except ImportError:
     print("GTK3 not available", file=sys.stderr)
     sys.exit(1)
