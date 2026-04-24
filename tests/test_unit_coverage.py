@@ -320,7 +320,8 @@ class TestLinuxScrollDirections:
         )
         mock_pag = MagicMock()
         from computer_use.backends import linux_x11
-        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pag):
+        from computer_use.backends import input_utils
+        with patch.object(input_utils, "require_pyautogui", return_value=mock_pag):
             with patch.object(linux_x11, "element_from_index") as mock_efi:
                 mock_efi.return_value = ELEMENT_CACHE["1"]
                 backend = LinuxX11Backend()
@@ -337,7 +338,8 @@ class TestLinuxScrollDirections:
         )
         mock_pag = MagicMock()
         from computer_use.backends import linux_x11
-        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pag):
+        from computer_use.backends import input_utils
+        with patch.object(input_utils, "require_pyautogui", return_value=mock_pag):
             with patch.object(linux_x11, "element_from_index") as mock_efi:
                 mock_efi.return_value = ELEMENT_CACHE["1"]
                 backend = LinuxX11Backend()

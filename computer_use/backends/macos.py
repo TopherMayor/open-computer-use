@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import base64
-import io
 import os
-import platform
 import re
 import subprocess
 import time
@@ -11,7 +8,7 @@ from typing import Any
 
 from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
 from .base import ComputerBackend
-from .input_utils import KEY_ALIASES, normalize_button
+from .input_utils import KEY_ALIASES, normalize_button, require_pyautogui, capture_screenshot_png, perform_scroll, perform_drag
 
 
 def import_appkit():
@@ -223,49 +220,12 @@ def is_ax_trusted() -> bool | None:
         return None
 
 
-def require_pyautogui():
-    try:
-        import pyautogui  # type: ignore
-    except Exception as exc:  # pragma: no cover - depends on host setup
-        raise RuntimeError(
-            "pyautogui is required for desktop input. Run `pip install -r requirements.txt`."
-        ) from exc
-
-    pyautogui.FAILSAFE = True
-    return pyautogui
-
-
 def screen_size() -> dict[str, int]:
     try:
         size = require_pyautogui().size()
         return {"width": int(size[0]), "height": int(size[1])}
     except Exception:
         return {"width": 0, "height": 0}
-
-
-def _capture_screenshot_png() -> tuple[str, int, int, str]:
-    try:
-        pyautogui = require_pyautogui()
-        image = pyautogui.screenshot()
-        buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
-        return base64.b64encode(buffer.getvalue()).decode("ascii"), image.width, image.height, "pyautogui"
-    except Exception:
-        pass
-
-    try:
-        import mss  # type: ignore
-        import mss.tools  # type: ignore
-
-        with mss.mss() as sct:
-            monitor = sct.monitors[0]
-            sct_img = sct.grab(monitor)
-            data = mss.tools.to_png(sct_img.rgb, sct_img.size)
-            return base64.b64encode(data).decode("ascii"), sct_img.width, sct_img.height, "mss"
-    except Exception as exc:
-        raise RuntimeError(
-            "Could not capture a screenshot. Install pyautogui or mss and grant Screen Recording permission."
-        ) from exc
 
 
 def _running_apps() -> list[dict[str, Any]]:
@@ -816,7 +776,7 @@ class MacOSBackend(ComputerBackend):
         return _launch_or_activate_app(app_name)
 
     def capture_screenshot(self) -> tuple[str, int, int, str]:
-        return _capture_screenshot_png()
+        return capture_screenshot_png()
 
     def get_accessibility_tree(self, app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
         max_depth = int(kwargs.get("max_depth", 7))
@@ -851,9 +811,7 @@ class MacOSBackend(ComputerBackend):
 
     def drag(self, from_x: int, from_y: int, to_x: int, to_y: int, **kwargs) -> dict[str, Any]:
         duration = float(kwargs.get("duration", 0.35))
-        pyautogui = require_pyautogui()
-        pyautogui.moveTo(from_x, from_y)
-        pyautogui.dragTo(to_x, to_y, duration=duration, button="left")
+        perform_drag(from_x, from_y, to_x, to_y, duration=duration)
         return {"success": True, "from": [from_x, from_y], "to": [to_x, to_y], "duration": duration}
 
     def press_key(self, key: str, **kwargs) -> dict[str, Any]:
@@ -869,31 +827,7 @@ class MacOSBackend(ComputerBackend):
         pages = float(pages)
         cached = element_from_index(element_index)
         x, y = frame_center(cached.frame)
-        pyautogui = require_pyautogui()
-        pyautogui.moveTo(x, y)
-
-        units = max(1, int(round(7 * pages)))
-        if direction == "up":
-            pyautogui.scroll(units, x=x, y=y)
-        elif direction == "down":
-            pyautogui.scroll(-units, x=x, y=y)
-        elif direction == "left":
-            if hasattr(pyautogui, "hscroll"):
-                pyautogui.hscroll(-units, x=x, y=y)
-            else:
-                pyautogui.keyDown("shift")
-                pyautogui.scroll(units, x=x, y=y)
-                pyautogui.keyUp("shift")
-        elif direction == "right":
-            if hasattr(pyautogui, "hscroll"):
-                pyautogui.hscroll(units, x=x, y=y)
-            else:
-                pyautogui.keyDown("shift")
-                pyautogui.scroll(-units, x=x, y=y)
-                pyautogui.keyUp("shift")
-        else:
-            raise RuntimeError("direction must be one of: up, down, left, right")
-
+        perform_scroll(x, y, direction, pages)
         return {"success": True, "element_index": element_index, "direction": direction, "pages": pages}
 
     def set_value(self, element_index: str, value: str, **kwargs) -> dict[str, Any]:
