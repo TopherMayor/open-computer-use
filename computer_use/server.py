@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import time
 import traceback
 from collections.abc import Callable
 from typing import Any
@@ -89,6 +90,7 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     pid = app_info.get("pid", 0)
 
     tree = be.get_accessibility_tree(app_name, pid, max_depth=max_depth, max_elements=max_elements)
+    _save_tree_snapshot(tree)
     _types.LAST_APP = app_name
 
     content: list[dict[str, Any]] = [
@@ -419,6 +421,35 @@ def _tool_visual_locate(args: dict[str, Any], be: Any) -> dict[str, Any]:
     }
 
 
+def _save_tree_snapshot(tree: dict[str, Any] | None) -> None:
+    if not os.environ.get("GSD_CU_SNAPSHOT_TREES"):
+        return
+    if tree is None:
+        return
+    os.makedirs("artifacts/trees", exist_ok=True)
+    path = f"artifacts/trees/tree-{time.time():.6f}.json"
+    try:
+        with open(path, "w") as f:
+            json.dump(tree, f, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
+
+
+def _save_failure_bundle(error: str, request_id: Any, tool_name: str, args: dict[str, Any]) -> None:
+    from . import failure
+    from . import types as _types_mod
+    try:
+        failure.create_failure_bundle(
+            error=error,
+            tb=traceback.format_exc(),
+            request={"id": request_id, "tool": tool_name, "args": args},
+            audit_log_path=_audit.get_path(),
+            screenshot=_types_mod.LAST_SCREENSHOT or None,
+        )
+    except Exception:
+        pass
+
+
 TOOL_HANDLERS: dict[str, Callable] = {
     "get_app_state": _tool_get_app_state,
     "list_apps": _tool_list_apps,
@@ -461,9 +492,11 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             from .tools import TOOLS
             result = {"tools": TOOLS}
         elif method == "tools/call":
+            _call_start = time.monotonic()
             name = params.get("name")
             if not name or name not in TOOL_HANDLERS:
-                _audit.log_action(str(name), {}, "error: unknown tool", error=f"Unknown tool: {name}")
+                _lat = (time.monotonic() - _call_start) * 1000
+                _audit.log_action(str(name), {}, "error: unknown tool", error=f"Unknown tool: {name}", latency_ms=_lat)
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,
@@ -471,7 +504,8 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
                 }
             allowed, reason = _safety.check_action_allowed()
             if not allowed:
-                _audit.log_action(name, {}, f"blocked: {reason}")
+                _lat = (time.monotonic() - _call_start) * 1000
+                _audit.log_action(name, {}, f"blocked: {reason}", latency_ms=_lat)
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,
@@ -485,10 +519,13 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
                 else:
                     result = ok_text(tool_result)
                 _safety.record_action()
-                _audit.log_action(name, arguments, "ok")
+                _lat = (time.monotonic() - _call_start) * 1000
+                _audit.log_action(name, arguments, "ok", latency_ms=_lat)
             except Exception as exc:
+                _lat = (time.monotonic() - _call_start) * 1000
                 result = error_result(str(exc))
-                _audit.log_action(name, arguments, "error", error=str(exc))
+                _audit.log_action(name, arguments, "error", error=str(exc), latency_ms=_lat)
+                _save_failure_bundle(str(exc), request_id, name, arguments)
         elif method == "resources/list":
             result = {"resources": []}
         elif method == "prompts/list":
