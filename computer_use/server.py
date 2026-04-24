@@ -311,9 +311,13 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             result = {"tools": TOOLS}
         elif method == "tools/call":
             name = params.get("name")
+            if not name or name not in TOOL_HANDLERS:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": error_result(f"Unknown tool: {name}"),
+                }
             arguments = params.get("arguments") or {}
-            if name not in TOOL_HANDLERS:
-                raise RuntimeError(f"Unknown tool: {name}")
             try:
                 tool_result = TOOL_HANDLERS[name](arguments, backend)
                 if "content" in tool_result:
@@ -338,7 +342,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
         return {
             "jsonrpc": "2.0",
             "id": request_id,
-            "result": error_result(str(exc)),
+            "error": {"code": -32603, "message": f"Internal error: {exc}"},
         }
 
 
