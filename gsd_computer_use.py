@@ -528,13 +528,11 @@ class GSDComputerUse:
         """
         if self.platform == "darwin":
             try:
-                script = f'''
-                tell application "{app_name}"
-                    activate
-                end tell
-                '''
+                script = 'tell application "System Events" to get name of every process whose name is "{}"'.format(
+                    app_name.replace('"', '').replace('\\', '')
+                )
                 subprocess.run(
-                    ["osascript", "-e", script],
+                    ["osascript", "-e", 'tell application "' + app_name.replace('"', '') + '" to activate'],
                     capture_output=True,
                     timeout=5
                 )
