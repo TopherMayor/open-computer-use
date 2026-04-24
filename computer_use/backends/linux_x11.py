@@ -134,9 +134,13 @@ def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
     if not executable:
         executable = app_name
 
-    code, _, stderr = _run(["sh", "-c", f"{executable} &"])
-    if code != 0 and stderr:
-        raise RuntimeError(f"Could not launch app {app_name!r}: {stderr}")
+    try:
+        subprocess.Popen([executable], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        raise RuntimeError(f"Could not launch app {app_name!r}: executable {executable!r} not found")
+    except Exception as exc:
+        raise RuntimeError(f"Could not launch app {app_name!r}: {exc}")
 
     import time
     time.sleep(0.8)
