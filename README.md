@@ -1,8 +1,18 @@
 # GSD Computer Use
 
-Self-hosted Computer Use MCP server for desktop automation. Provides 13 tools for inspecting and controlling desktop applications via the Model Context Protocol.
+A self-hosted MCP server for desktop automation. Provides 13 tools for inspecting and controlling desktop applications via the Model Context Protocol — works with Claude Desktop, Cursor, Codex, and any MCP-compatible client.
 
 This is an independent local implementation. It does not launch, wrap, proxy, import, or depend on any bundled native Computer Use plugin.
+
+## What It Does
+
+GSD Computer Use gives AI agents the ability to see and interact with desktop applications through accessibility APIs and screen capture. It supports:
+
+- **Accessibility-first interaction** — targets UI elements by their accessibility tree metadata (role, name, index) rather than pixel coordinates alone
+- **Visual element targeting** — natural language descriptions like "click the Save button" via `visual_click` and `visual_locate`
+- **Multi-platform** — macOS (AppKit/Quartz), Linux X11 (AT-SPI2/xdotool), and a deterministic fake backend for testing
+- **Safety controls** — audit logging, action budgets, rate limiting, and file-based emergency stop
+- **Docker testing** — containerized Linux desktop with Xvfb, real GTK apps, and ffmpeg video recording
 
 ## Tools
 
@@ -28,14 +38,14 @@ This is an independent local implementation. It does not launch, wrap, proxy, im
 - **Action budgets**: Limit total actions per session (`GSD_CU_MAX_ACTIONS`)
 - **Rate limiting**: Token-bucket rate limiter for actions per minute (`GSD_CU_MAX_PER_MINUTE`)
 - **Emergency stop**: Halt all actions by creating a file (`GSD_CU_EMERGENCY_STOP_FILE`)
-- **Clipboard preservation**: Clipboard is saved and restored around paste-based text input
+- **Clipboard preservation**: Clipboard contents are saved and restored around paste-based text input
 
 ## Backends
 
 | Backend | `GSD_CU_BACKEND` | Platform | Description |
 |---------|-------------------|----------|-------------|
 | macOS | `macos` | macOS | AppKit, Quartz, pyautogui |
-| Linux X11 | `linux-x11` | Linux | Xvfb, xdotool, AT-SPI |
+| Linux X11 | `linux-x11` | Linux | Xvfb, xdotool, AT-SPI2 |
 | Fake | `fake` | Any | Deterministic test backend |
 
 Auto-detection: if `GSD_CU_BACKEND` is unset, uses `macos` on macOS and `linux-x11` on Linux when `$DISPLAY` is set, otherwise `fake`.
@@ -80,9 +90,41 @@ Run desktop tests in a containerized Linux environment with video capture:
 ./docker/desktop-test/run-and-record.sh
 ```
 
-This builds a Docker image with Xvfb, ffmpeg, and a fixture GTK desktop app, then runs smoke tests while recording the display. Video artifacts are saved to `test-recordings/`.
+This builds a Docker image with Xvfb, ffmpeg, and a fixture GTK desktop app, then runs 9 smoke tests while recording the display. Video artifacts are saved to `test-recordings/`.
+
+A sample recording from a successful test run is included at `test-recordings/desktop-test.mp4` — H264, 1280x800, 10fps, captured during the desktop smoke test suite.
 
 See [docs/TESTING.md](docs/TESTING.md) for details.
+
+## Testing
+
+```
+236 tests across 12 test files — 227 pass locally (fake backend), 9 desktop smoke tests run in Docker
+
+test_audit.py ..............    audit logging
+test_clipboard.py ...........    clipboard preservation
+test_coverage_gaps.py ......    edge cases and error paths
+test_desktop_smoke.py ......    real GTK app interaction (Docker)
+test_failure_modes.py ......    graceful degradation
+test_linux_parity.py .......    macOS/Linux backend parity
+test_mcp_contract.py .......    MCP JSON-RPC protocol
+test_recording.py ..........    video recording infrastructure
+test_safety.py .............    budgets, rate limiting, emergency stop
+test_unit_coverage.py ......    backend internals
+test_vision.py .............    screenshot analysis and OCR
+test_visual_click.py .......    natural language element targeting
+```
+
+```bash
+# Run locally (fake backend)
+python3 -m pytest
+
+# Run with Docker desktop tests
+cd docker/desktop-test && docker compose run --rm desktop-tests
+
+# Run with video recording
+cd docker/desktop-test && docker compose run --rm desktop-tests-recorded
+```
 
 ## Architecture
 
@@ -104,14 +146,39 @@ MCP Client (Claude, Cursor, Codex)
         └── audit.py (JSONL log)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details including the visual click pipeline and element caching strategy.
+
+## Project Structure
+
+```
+computer_use/
+  __init__.py          version and server identity
+  server.py            MCP JSON-RPC server, tool dispatch
+  tools.py             13 tool definitions and handlers
+  backends/
+    base.py            abstract Backend interface
+    macos.py           macOS AppKit/Quartz backend
+    linux_x11.py       Linux Xvfb/xdotool/AT-SPI2 backend
+    fake.py            deterministic test backend
+    input_utils.py     shared input helpers
+  matcher.py           visual element matching (token-overlap scoring)
+  vision.py            screenshot analysis, OCR, diff
+  safety.py            action budgets, rate limiting, emergency stop
+  audit.py             structured JSONL audit logging
+  types.py             shared type definitions
+docker/desktop-test/   containerized Linux test environment
+tests/                 236 tests across 12 files
+docs/                  architecture, testing, maturity roadmap
+```
+
+~6,150 lines of Python across the `computer_use` package and test suite.
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) - system design and data flow
-- [Testing guide](docs/TESTING.md) - test tiers and how to run them
-- [Docker test plan](docs/docker-desktop-test-plan.md) - containerized desktop test environment
-- [Maturity roadmap](docs/maturity-roadmap.md) - project milestones and priorities
+- [Architecture](docs/ARCHITECTURE.md) — system design, data flow, visual click pipeline
+- [Testing guide](docs/TESTING.md) — test tiers, commands, video artifacts
+- [Docker test plan](docs/docker-desktop-test-plan.md) — containerized desktop test environment
+- [Maturity roadmap](docs/maturity-roadmap.md) — project milestones and priorities
 
 ## License
 
