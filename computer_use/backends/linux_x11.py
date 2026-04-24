@@ -125,35 +125,38 @@ def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
         windows = app.get("windows") or [None]
         _activate_app(windows)
         code, _, _ = _run(["wmctrl", "-a", app_name])
-        if code != 0:
-            if app.get("windows"):
-                _run(["xdotool", "windowactivate", app["windows"][0]])
+        if code != 0 and app.get("windows"):
+            _run(["xdotool", "windowactivate", app["windows"][0]])
         return app
 
-    code, stdout, stderr = _run(["which", app_name])
-    if code == 0 and stdout.strip():
+    which_code, stdout, stderr = _run(["which", app_name])
+    if which_code == 0 and stdout.strip():
         executable = stdout.strip()
     else:
-        code, stdout, _ = _run(["which", app_name.lower()])
-        executable = stdout.strip() if code == 0 else app_name
+        which_code, stdout, _ = _run(["which", app_name.lower()])
+        executable = stdout.strip() if which_code == 0 else app_name
 
     if not executable:
         executable = app_name
 
     try:
-        subprocess.Popen([executable], start_new_session=True,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen(
+            [executable],
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     except FileNotFoundError:
-        raise RuntimeError(f"Could not launch app {app_name!r}: executable {executable!r} not found")
+        raise RuntimeError(f"Could not launch app {app_name!r}: executable {executable!r} not found") from None
     except Exception as exc:
-        raise RuntimeError(f"Could not launch app {app_name!r}: {exc}")
+        raise RuntimeError(f"Could not launch app {app_name!r}: {exc}") from exc
 
     import time
     time.sleep(0.8)
 
     app = _find_running_app(app_name)
     if app is None:
-        if code == 0:
+        if which_code == 0:
             return {
                 "name": app_name,
                 "running": True,
