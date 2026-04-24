@@ -9,4 +9,4 @@ from __future__ import annotations
 
 __version__ = "1.0.0"
 SERVER_NAME = "gsd-computer-use"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = __version__

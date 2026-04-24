@@ -7,7 +7,7 @@ import traceback
 from collections.abc import Callable
 from typing import Any
 
-from . import SERVER_NAME, SERVER_VERSION
+from . import SERVER_NAME, SERVER_VERSION, __version__
 from . import audit as _audit
 from . import safety as _safety
 from . import types as _types
@@ -453,7 +453,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             result = {
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {"listChanged": False}},
-                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
+                "serverInfo": {"name": SERVER_NAME, "version": __version__},
             }
         elif method == "ping":
             result = {}
@@ -548,6 +548,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Self-hosted Computer Use MCP server")
     parser.add_argument("--self-test", action="store_true", help="Validate server metadata without touching the GUI")
     parser.add_argument("--list-tools", action="store_true", help="Print tool schemas and exit")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
     if args.self_test:

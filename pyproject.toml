@@ -1,17 +1,33 @@
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "gsd-computer-use"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Self-hosted Computer Use MCP server for desktop automation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+dependencies = [
+    "mss>=9.0.0",
+    "pyautogui>=0.9.54",
+    "pynput>=1.7.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "pyperclip>=1.8.0",
+    "pytesseract>=0.3.10",
+]
 
 [project.scripts]
+gsd-computer-use-mcp = "computer_use.server:main"
 gsd-computer-use = "computer_use.server:main"
+
+[tool.setuptools.packages.find]
+include = ["computer_use*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "computer_use.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

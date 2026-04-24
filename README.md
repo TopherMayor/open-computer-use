@@ -14,6 +14,46 @@ GSD Computer Use gives AI agents the ability to see and interact with desktop ap
 - **Safety controls** — audit logging, action budgets, rate limiting, and file-based emergency stop
 - **Docker testing** — containerized Linux desktop with Xvfb, real GTK apps, and ffmpeg video recording
 
+## Installation
+
+### From source (developer, editable)
+
+```bash
+git clone <repo-url> && cd gsd-computer-use
+python3 -m venv .venv
+./.venv/bin/pip install -e .
+gsd-computer-use-mcp --version
+gsd-computer-use-mcp --self-test
+```
+
+### From source (user, non-editable)
+
+```bash
+pip install .
+```
+
+### Entrypoint
+
+After installation, the `gsd-computer-use-mcp` command is available on `$PATH`. It launches the MCP server over stdio transport:
+
+```json
+{
+  "mcpServers": {
+    "gsd-computer-use": {
+      "command": "gsd-computer-use-mcp"
+    }
+  }
+}
+```
+
+### Requirements lockfile
+
+For reproducible installs, use the lockfile:
+
+```bash
+pip install -r requirements-lock.txt
+```
+
 ## Tools
 
 | Tool | Description |
