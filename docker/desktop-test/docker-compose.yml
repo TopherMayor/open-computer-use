@@ -8,6 +8,8 @@ services:
     environment:
       - GSD_CU_BACKEND=fake
       - PYTHONPATH=/home/testuser/repo
+    mem_limit: 512m
+    cpus: 1
 
   desktop-tests:
     build:
@@ -27,6 +29,8 @@ services:
       - DISPLAY=:99
       - GSD_CU_BACKEND=linux-x11
       - PYTHONPATH=/home/testuser/repo
+    mem_limit: 1g
+    cpus: 2
 
   novnc-debug:
     build:
@@ -47,3 +51,4 @@ services:
       "
     environment:
       - DISPLAY=:99
+    mem_limit: 1g

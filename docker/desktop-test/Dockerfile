@@ -1,9 +1,11 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     python3.12 \
+    python3.12-venv \
     python3-pip \
     xvfb \
     x11vnc \
@@ -30,7 +32,10 @@ USER testuser
 WORKDIR /home/testuser/repo
 
 COPY --chown=testuser:testuser requirements-linux.txt .
-RUN pip3 install --no-cache-dir --break-system-packages pytest pytesseract>=0.3.10 -r requirements-linux.txt
+RUN python3.12 -m venv /home/testuser/.venv && \
+    /home/testuser/.venv/bin/pip install --no-cache-dir pytest pytesseract>=0.3.10 -r requirements-linux.txt
+
+ENV PATH="/home/testuser/.venv/bin:$PATH"
 
 COPY --chown=testuser:testuser . /home/testuser/repo
 
