@@ -7,6 +7,7 @@ import traceback
 from typing import Any, Callable
 
 from . import SERVER_NAME, SERVER_VERSION
+from . import audit as _audit
 from . import types as _types
 
 PROTOCOL_VERSION = "2024-11-05"
@@ -65,6 +66,7 @@ def get_backend() -> Any:
 
 
 backend: Any = None
+_audit.configure(os.environ.get("GSD_CU_AUDIT_LOG"))
 
 
 def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
@@ -315,6 +317,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
         elif method == "tools/call":
             name = params.get("name")
             if not name or name not in TOOL_HANDLERS:
+                _audit.log_action(str(name), {}, "error: unknown tool", error=f"Unknown tool: {name}")
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,
@@ -327,8 +330,10 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
                     result = tool_result
                 else:
                     result = ok_text(tool_result)
+                _audit.log_action(name, arguments, "ok")
             except Exception as exc:
                 result = error_result(str(exc))
+                _audit.log_action(name, arguments, "error", error=str(exc))
         elif method == "resources/list":
             result = {"resources": []}
         elif method == "prompts/list":
