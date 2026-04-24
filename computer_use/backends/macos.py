@@ -10,11 +10,8 @@ import time
 from typing import Any
 
 from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
+from .base import ComputerBackend
 from .input_utils import KEY_ALIASES, normalize_button
-
-
-SERVER_NAME = "gsd-computer-use"
-SERVER_VERSION = "1.0.0"
 
 
 def import_appkit():
@@ -803,7 +800,7 @@ def _normalize_ax_action(action: str, available: list[str]) -> str:
     return "AX" + action[:1].upper() + action[1:]
 
 
-class MacOSBackend:
+class MacOSBackend(ComputerBackend):
     name = "macos"
 
     def list_apps(self, **kwargs) -> list[dict[str, Any]]:

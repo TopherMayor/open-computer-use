@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index as base_element_from_index, frame_center
+from .base import ComputerBackend
 
 
 SCREEN_SIZE = {"width": 1920, "height": 1080}
@@ -25,7 +26,7 @@ def _fake_element(index: int) -> CachedElement:
     )
 
 
-class FakeBackend:
+class FakeBackend(ComputerBackend):
     name = "fake"
 
     def __init__(self):

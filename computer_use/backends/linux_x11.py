@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-import platform
 import re
 import subprocess
 from typing import Any
 
 from ..types import CachedElement, ELEMENT_CACHE, clear_cache, element_from_index, frame_center
+from .base import ComputerBackend
 from .input_utils import KEY_ALIASES, normalize_button
 
 
@@ -530,7 +530,7 @@ def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, 
     return {"element_index": "0", "role": "window", "title": app_name, "children": children}
 
 
-class LinuxX11Backend:
+class LinuxX11Backend(ComputerBackend):
     name = "linux-x11"
 
     def __init__(self):
