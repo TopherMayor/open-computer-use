@@ -10,6 +10,7 @@ from . import SERVER_NAME, SERVER_VERSION
 from . import audit as _audit
 from . import safety as _safety
 from . import types as _types
+from .backends.input_utils import preserve_clipboard, restore_clipboard
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -148,7 +149,11 @@ def _tool_press_key(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _tool_type_text(args: dict[str, Any], be: Any) -> dict[str, Any]:
-    return be.type_text(args["text"])
+    saved = preserve_clipboard()
+    try:
+        return be.type_text(args["text"])
+    finally:
+        restore_clipboard(saved)
 
 
 def _tool_scroll(args: dict[str, Any], be: Any) -> dict[str, Any]:
@@ -160,7 +165,11 @@ def _tool_scroll(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _tool_set_value(args: dict[str, Any], be: Any) -> dict[str, Any]:
-    return be.set_value(args["element_index"], args["value"])
+    saved = preserve_clipboard()
+    try:
+        return be.set_value(args["element_index"], args["value"])
+    finally:
+        restore_clipboard(saved)
 
 
 def _tool_perform_secondary_action(args: dict[str, Any], be: Any) -> dict[str, Any]:

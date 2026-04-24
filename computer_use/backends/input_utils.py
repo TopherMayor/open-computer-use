@@ -113,3 +113,23 @@ def perform_drag(
     pyautogui = require_pyautogui()
     pyautogui.moveTo(from_x, from_y)
     pyautogui.dragTo(to_x, to_y, duration=duration, button="left")
+
+
+def preserve_clipboard() -> str | None:
+    """Save current clipboard content. Returns saved text or None."""
+    try:
+        import pyperclip
+        return pyperclip.paste()
+    except Exception:
+        return None
+
+
+def restore_clipboard(saved: str | None) -> None:
+    """Restore clipboard to saved content."""
+    if saved is None:
+        return
+    try:
+        import pyperclip
+        pyperclip.copy(saved)
+    except Exception:
+        pass
