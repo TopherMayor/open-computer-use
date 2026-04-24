@@ -99,6 +99,36 @@ class TestCheckActionAllowed:
         safety.configure_safety()
 
 
+class TestEmergencyStop:
+    def test_no_file_means_no_stop(self, tmp_path):
+        safety._EMERGENCY_STOP_FILE = str(tmp_path / "stop")
+        assert safety.check_emergency_stop() is False
+
+    def test_file_triggers_stop(self, tmp_path):
+        stop_file = tmp_path / "stop"
+        stop_file.touch()
+        safety._EMERGENCY_STOP_FILE = str(stop_file)
+        assert safety.check_emergency_stop() is True
+        os.remove(str(stop_file))
+
+    def test_env_var_unset_means_no_stop(self):
+        original = safety._EMERGENCY_STOP_FILE
+        safety._EMERGENCY_STOP_FILE = ""
+        assert safety.check_emergency_stop() is False
+        safety._EMERGENCY_STOP_FILE = original
+
+    def test_emergency_stop_in_check_action_allowed(self, tmp_path):
+        stop_file = tmp_path / "stop"
+        stop_file.touch()
+        original = safety._EMERGENCY_STOP_FILE
+        safety._EMERGENCY_STOP_FILE = str(stop_file)
+        allowed, reason = safety.check_action_allowed()
+        assert allowed is False
+        assert "Emergency stop active" in reason
+        os.remove(str(stop_file))
+        safety._EMERGENCY_STOP_FILE = original
+
+
 class TestSafetyIntegration:
     def test_handle_request_respects_budget(self):
         from computer_use.server import handle_request

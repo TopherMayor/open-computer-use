@@ -55,6 +55,7 @@ class RateLimiter:
 
 _budget: ActionBudget = ActionBudget()
 _rate_limiter: RateLimiter = RateLimiter()
+_EMERGENCY_STOP_FILE = os.environ.get("GSD_CU_EMERGENCY_STOP_FILE", "")
 
 
 def configure_safety(max_actions: int = 0, max_per_minute: int = 0) -> None:
@@ -64,8 +65,17 @@ def configure_safety(max_actions: int = 0, max_per_minute: int = 0) -> None:
     _rate_limiter = RateLimiter(max_per_minute)
 
 
+def check_emergency_stop() -> bool:
+    """Return True if emergency stop is active."""
+    if not _EMERGENCY_STOP_FILE:
+        return False
+    return os.path.exists(_EMERGENCY_STOP_FILE)
+
+
 def check_action_allowed() -> tuple[bool, str]:
     """Check if an action is allowed. Returns (allowed, reason)."""
+    if check_emergency_stop():
+        return False, f"Emergency stop active — delete {_EMERGENCY_STOP_FILE} to resume"
     if not _budget.check():
         return False, f"Action budget exceeded ({_budget.max_actions} actions)"
     if not _rate_limiter.check():
