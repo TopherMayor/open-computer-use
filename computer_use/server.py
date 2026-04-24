@@ -160,8 +160,11 @@ def _tool_type_text(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _tool_scroll(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    element_index = args.get("element_index")
+    if not element_index:
+        raise RuntimeError("'element_index' is required for scroll")
     return be.scroll(
-        args["element_index"],
+        element_index,
         args["direction"],
         float(args.get("pages", 1)),
     )
