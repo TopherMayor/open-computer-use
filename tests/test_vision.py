@@ -10,6 +10,9 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+_IS_FAKE = os.environ.get("GSD_CU_BACKEND", "fake") == "fake"
+requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
+
 
 def _make_png(width: int = 100, height: int = 100, color: tuple = (128, 128, 128)) -> bytes:
     from PIL import Image
@@ -269,6 +272,7 @@ class TestRoleColors:
         assert _role_color("Button") == _role_color("button")
 
 
+@requires_fake
 class TestLastScreenshot:
     def test_last_screenshot_stored_after_get_app_state(self):
         import computer_use.types as _types
@@ -284,6 +288,7 @@ class TestLastScreenshot:
         assert len(_types.LAST_SCREENSHOT) > 0
 
 
+@requires_fake
 class TestAnalyzeScreenshotTool:
     def test_analyze_screenshot_returns_data(self):
         from computer_use.server import handle_request
@@ -363,6 +368,7 @@ class TestScreenshotDiffTool:
         })
         assert resp["result"]["isError"] is True
 
+    @requires_fake
     def test_screenshot_diff_captures_current_if_no_after(self):
         before_b64 = _make_png_b64(100, 100, (0, 0, 0))
         from computer_use.server import handle_request

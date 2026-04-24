@@ -6,7 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 RUN apt-get update && apt-get install --no-install-recommends -y \
     python3.12 \
     python3.12-venv \
+    python3.12-dev \
+    python3-tk \
     python3-pip \
+    gcc \
     xvfb \
     x11vnc \
     novnc \

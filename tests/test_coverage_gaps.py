@@ -8,10 +8,15 @@ from unittest.mock import patch
 
 import pytest
 
+_IS_FAKE = os.environ.get("GSD_CU_BACKEND", "fake") == "fake"
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from computer_use.server import handle_request, self_test
 from computer_use.types import CachedElement, ELEMENT_CACHE, clear_cache
+
+
+requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 
 
 @pytest.fixture(autouse=True)
@@ -34,6 +39,7 @@ def _req(name: str, arguments: dict | None = None, req_id: int = 1) -> dict:
     })
 
 
+@requires_fake
 class TestDragViaHandleRequest:
     def test_drag_valid_coordinates(self):
         resp = _req("drag", {"from_x": 10, "from_y": 20, "to_x": 100, "to_y": 200})
@@ -53,6 +59,7 @@ class TestDragViaHandleRequest:
         assert data["duration"] == 1.0
 
 
+@requires_fake
 class TestTypeTextViaHandleRequest:
     def test_type_text_basic(self):
         resp = _req("type_text", {"text": "hello world"})
@@ -69,6 +76,7 @@ class TestTypeTextViaHandleRequest:
         assert data["chars"] == 0
 
 
+@requires_fake
 class TestPressKeyViaHandleRequest:
     def test_press_key_return(self):
         resp = _req("press_key", {"key": "Return"})
@@ -83,6 +91,7 @@ class TestPressKeyViaHandleRequest:
         assert data["key"] == "ctrl+c"
 
 
+@requires_fake
 class TestScrollViaHandleRequest:
     def test_scroll_with_element_index(self):
         ELEMENT_CACHE["0"] = CachedElement(
@@ -112,6 +121,7 @@ class TestScrollViaHandleRequest:
         assert data["pages"] == 2.5
 
 
+@requires_fake
 class TestSetValueViaHandleRequest:
     def test_set_value_basic(self):
         ELEMENT_CACHE["0"] = CachedElement(
@@ -128,6 +138,7 @@ class TestSetValueViaHandleRequest:
         assert data["element_index"] == "0"
 
 
+@requires_fake
 class TestListAppsViaHandleRequest:
     def test_list_apps_default(self):
         resp = _req("list_apps")
@@ -142,6 +153,7 @@ class TestListAppsViaHandleRequest:
         assert "apps" in data
 
 
+@requires_fake
 class TestPerformSecondaryActionViaHandleRequest:
     def test_perform_secondary_action(self):
         ELEMENT_CACHE["0"] = CachedElement(
@@ -182,6 +194,7 @@ class TestSelfTest:
         assert data["schemasValid"] is True
 
 
+@requires_fake
 class TestGetAppStateAnnotated:
     def test_get_app_state_with_annotate_screenshot(self):
         resp = _req("get_app_state", {"app": "TestApp", "annotate_screenshot": True})

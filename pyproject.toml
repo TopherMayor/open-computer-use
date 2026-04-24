@@ -16,6 +16,9 @@ gsd-computer-use = "computer_use.server:main"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "requires_fake: test only works with the fake backend (skipped with real backends)",
+]
 
 [tool.mypy]
 python_version = "3.10"
