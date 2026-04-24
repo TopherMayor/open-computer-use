@@ -8,6 +8,7 @@ from typing import Any, Callable
 
 from . import SERVER_NAME, SERVER_VERSION
 from . import audit as _audit
+from . import safety as _safety
 from . import types as _types
 
 PROTOCOL_VERSION = "2024-11-05"
@@ -67,6 +68,10 @@ def get_backend() -> Any:
 
 backend: Any = None
 _audit.configure(os.environ.get("GSD_CU_AUDIT_LOG"))
+_safety.configure_safety(
+    max_actions=int(os.environ.get("GSD_CU_MAX_ACTIONS", "0")),
+    max_per_minute=int(os.environ.get("GSD_CU_MAX_PER_MINUTE", "0")),
+)
 
 
 def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
@@ -323,6 +328,14 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
                     "id": request_id,
                     "result": error_result(f"Unknown tool: {name}"),
                 }
+            allowed, reason = _safety.check_action_allowed()
+            if not allowed:
+                _audit.log_action(name, {}, f"blocked: {reason}")
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "result": error_result(reason),
+                }
             arguments = params.get("arguments") or {}
             try:
                 tool_result = TOOL_HANDLERS[name](arguments, backend)
@@ -330,6 +343,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
                     result = tool_result
                 else:
                     result = ok_text(tool_result)
+                _safety.record_action()
                 _audit.log_action(name, arguments, "ok")
             except Exception as exc:
                 result = error_result(str(exc))
