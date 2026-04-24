@@ -11,7 +11,7 @@ from .base import ComputerBackend
 from .input_utils import KEY_ALIASES, normalize_button, require_pyautogui, capture_screenshot_png, perform_scroll, perform_drag
 
 
-def import_appkit():
+def import_appkit() -> Any:
     try:
         import AppKit  # type: ignore
 
@@ -20,7 +20,7 @@ def import_appkit():
         return None
 
 
-def import_quartz():
+def import_quartz() -> Any:
     try:
         import Quartz  # type: ignore
 

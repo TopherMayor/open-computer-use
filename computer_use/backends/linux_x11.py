@@ -495,7 +495,7 @@ def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, 
 class LinuxX11Backend(ComputerBackend):
     name = "linux-x11"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._app = None
 
     def list_apps(self, **kwargs) -> list[dict[str, Any]]:

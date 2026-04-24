@@ -29,7 +29,7 @@ def _fake_element(index: int) -> CachedElement:
 class FakeBackend(ComputerBackend):
     name = "fake"
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the fake backend with no active application."""
         self._app = None
 
