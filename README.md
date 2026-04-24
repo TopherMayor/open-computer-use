@@ -90,9 +90,23 @@ Run desktop tests in a containerized Linux environment with video capture:
 ./docker/desktop-test/run-and-record.sh
 ```
 
-This builds a Docker image with Xvfb, ffmpeg, and a fixture GTK desktop app, then runs 9 smoke tests while recording the display. Video artifacts are saved to `test-recordings/`.
+This builds a Docker image with Xvfb, ffmpeg, and a fixture GTK calculator app, then runs 9 smoke tests while recording the display. Video artifacts are saved to `test-recordings/`.
 
-A sample recording from a successful test run is included at `test-recordings/desktop-test.mp4` — H264, 1280x800, 10fps, captured during the desktop smoke test suite.
+### Test Recording
+
+The GIF below shows a real Docker run — Xvfb display, openbox window manager, and the GTK fixture calculator app being exercised by the 9 desktop smoke tests:
+
+![Desktop smoke test recording — 9 tests passing against a GTK calculator app in Docker Xvfb](test-recordings/desktop-test.gif)
+
+**What you're seeing:**
+1. Xvfb virtual display starts at 1280x800 with openbox window manager
+2. A GTK3 calculator fixture app launches (white window, top-left)
+3. The 9 smoke tests run in sequence — `list_apps`, `get_app_state`, `click`, `type_text`, `press_key`, `scroll`, `set_value`, `drag`, `perform_secondary_action`
+4. Each test interacts with the app via AT-SPI2 accessibility APIs and xdotool
+5. The display flickers as tests click, type, and scroll through elements
+6. All 9 tests pass in ~0.8 seconds
+
+The MP4 source is also available at `test-recordings/desktop-test.mp4` (H264, 1280x800, 15fps, 4 seconds).
 
 See [docs/TESTING.md](docs/TESTING.md) for details.
 

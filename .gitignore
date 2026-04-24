@@ -32,6 +32,9 @@ build/
 dist/
 *.egg-info/
 
-# Test recording artifacts (MP4 videos, except checked-in demo)
+# Test recording artifacts (except checked-in demo)
 test-recordings/*.mp4
 !test-recordings/desktop-test.mp4
+test-recordings/*.gif
+!test-recordings/desktop-test.gif
+test-recordings/*.png
