@@ -81,9 +81,8 @@ def _score_element(
 ) -> float:
     score = 0.0
 
-    if parsed.role_hint and role:
-        if parsed.role_hint == role.lower():
-            score += 30
+    if parsed.role_hint and role and parsed.role_hint == role.lower():
+        score += 30
 
     title_lower = (title or "").lower()
 

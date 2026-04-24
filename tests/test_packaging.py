@@ -26,9 +26,9 @@ class TestVersionPropagation:
             assert part.isdigit(), f"Version part '{part}' should be numeric"
 
     def test_server_version_matches_init(self):
-        from computer_use import __version__, SERVER_VERSION
+        from computer_use import SERVER_VERSION, __version__
 
-        assert SERVER_VERSION == __version__
+        assert __version__ == SERVER_VERSION
 
     def test_server_initialize_uses_version(self):
         from computer_use.server import handle_request

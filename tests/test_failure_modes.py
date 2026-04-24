@@ -30,7 +30,8 @@ class TestFailureModes:
         client = MCPClient(backend="fake")
         client.start()
         try:
-            result = client.tool_call("perform_secondary_action", {"app": "FakeApp", "element_index": "0", "action": "InvalidAction"})
+            result = client.tool_call(
+                "perform_secondary_action", {"app": "FakeApp", "element_index": "0", "action": "InvalidAction"})
             assert "result" in result
         finally:
             client.close()

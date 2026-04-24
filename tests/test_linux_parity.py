@@ -156,7 +156,7 @@ class TestRichAccessibilityTreeMetadata:
             _get_accessibility_tree("TestApp", 1234, max_elements=10)
 
         button_cached = None
-        for idx, cached in ELEMENT_CACHE.items():
+        for _idx, cached in ELEMENT_CACHE.items():
             if cached.role == "push button":
                 button_cached = cached
                 break
@@ -277,10 +277,10 @@ class TestClickByElementIndex:
 
         mock_pyautogui = MagicMock()
         from computer_use.backends import linux_x11
-        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui):
-            with patch.dict("sys.modules", {"gi": MagicMock(), "gi.repository": MagicMock()}):
-                backend = LinuxX11Backend()
-                result = backend.click(element_index="1", x=None, y=None)
+        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui), \
+             patch.dict("sys.modules", {"gi": MagicMock(), "gi.repository": MagicMock()}):
+            backend = LinuxX11Backend()
+            result = backend.click(element_index="1", x=None, y=None)
 
         assert result["success"] is True
         assert result["method"] == "mouse"
@@ -405,11 +405,11 @@ class TestSetValue:
 
         mock_pyautogui = MagicMock()
         from computer_use.backends import linux_x11
-        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui):
-            with patch.object(linux_x11, "_press_key_sequence"):
-                with patch.object(linux_x11, "_type_literal_text", return_value="keyboard"):
-                    backend = LinuxX11Backend()
-                    result = backend.set_value("1", "hello")
+        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui), \
+             patch.object(linux_x11, "_press_key_sequence"), \
+             patch.object(linux_x11, "_type_literal_text", return_value="keyboard"):
+            backend = LinuxX11Backend()
+            result = backend.set_value("1", "hello")
 
         assert result["success"] is True
         assert "click-select" in result["method"]

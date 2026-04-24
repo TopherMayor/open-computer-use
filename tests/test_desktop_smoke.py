@@ -81,7 +81,8 @@ class TestDesktopSmoke:
         client.start()
         try:
             result = client.tool_call("get_app_state", {"app": "FakeApp"})
-            result = client.tool_call("scroll", {"app": "FakeApp", "element_index": "0", "direction": "down", "pages": 1})
+            result = client.tool_call(
+                "scroll", {"app": "FakeApp", "element_index": "0", "direction": "down", "pages": 1})
             assert "result" in result
             content = result["result"]["content"]
             text_content = next((c for c in content if c.get("type") == "text"), {})
@@ -107,7 +108,8 @@ class TestDesktopSmoke:
         client = MCPClient(backend="fake")
         client.start()
         try:
-            result = client.tool_call("drag", {"app": "FakeApp", "from_x": 100, "from_y": 100, "to_x": 200, "to_y": 200})
+            result = client.tool_call(
+                "drag", {"app": "FakeApp", "from_x": 100, "from_y": 100, "to_x": 200, "to_y": 200})
             assert "result" in result
             content = result["result"]["content"]
             text_content = next((c for c in content if c.get("type") == "text"), {})
@@ -120,7 +122,8 @@ class TestDesktopSmoke:
         client = MCPClient(backend="fake")
         client.start()
         try:
-            result = client.tool_call("perform_secondary_action", {"app": "FakeApp", "element_index": "0", "action": "AXPress"})
+            result = client.tool_call(
+                "perform_secondary_action", {"app": "FakeApp", "element_index": "0", "action": "AXPress"})
             assert "result" in result
             content = result["result"]["content"]
             text_content = next((c for c in content if c.get("type") == "text"), {})

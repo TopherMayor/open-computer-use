@@ -39,7 +39,8 @@ class TestLogAction:
     def test_strips_binary_args(self, tmp_path):
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
-        audit.log_action("get_app_state", {"app": "Safari", "screenshot": "bigbase64data", "image_data": "moredata"}, "ok")
+        audit.log_action("get_app_state",
+                         {"app": "Safari", "screenshot": "bigbase64data", "image_data": "moredata"}, "ok")
         audit.configure(None)
         with open(path) as f:
             line = f.readline()

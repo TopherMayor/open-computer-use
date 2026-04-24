@@ -6,6 +6,7 @@ import platform
 import time
 import traceback
 from collections.abc import Callable
+from contextlib import suppress
 from typing import Any
 
 from . import SERVER_NAME, SERVER_VERSION, __version__
@@ -300,8 +301,7 @@ def _tool_screenshot_diff(args: dict[str, Any], be: Any) -> dict[str, Any]:
 def _tool_visual_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
     import base64
 
-    from . import matcher
-    from . import vision
+    from . import matcher, vision
 
     description = args.get("description", "").strip()
     if not description:
@@ -369,8 +369,7 @@ def _tool_visual_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
 def _tool_visual_locate(args: dict[str, Any], be: Any) -> dict[str, Any]:
     import base64
 
-    from . import matcher
-    from . import vision
+    from . import matcher, vision
 
     description = args.get("description", "").strip()
     if not description:
@@ -441,7 +440,7 @@ def _save_tree_snapshot(tree: dict[str, Any] | None) -> None:
 def _save_failure_bundle(error: str, request_id: Any, tool_name: str, args: dict[str, Any]) -> None:
     from . import failure
     from . import types as _types_mod
-    try:
+    with suppress(Exception):
         failure.create_failure_bundle(
             error=error,
             tb=traceback.format_exc(),
@@ -449,8 +448,6 @@ def _save_failure_bundle(error: str, request_id: Any, tool_name: str, args: dict
             audit_log_path=_audit.get_path(),
             screenshot=_types_mod.LAST_SCREENSHOT or None,
         )
-    except Exception:
-        pass
 
 
 TOOL_HANDLERS: dict[str, Callable] = {
@@ -517,10 +514,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             arguments = params.get("arguments") or {}
             try:
                 tool_result = TOOL_HANDLERS[name](arguments, backend)
-                if "content" in tool_result:
-                    result = tool_result
-                else:
-                    result = ok_text(tool_result)
+                result = tool_result if "content" in tool_result else ok_text(tool_result)
                 _safety.record_action()
                 _lat = (time.monotonic() - _call_start) * 1000
                 _audit.log_action(name, arguments, "ok", latency_ms=_lat)

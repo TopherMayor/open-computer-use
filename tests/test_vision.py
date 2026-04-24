@@ -80,9 +80,9 @@ class TestOCRExtract:
 
     def test_ocr_exception_returns_empty(self):
         from computer_use.vision import ocr_extract
-        with patch("computer_use.vision.pytesseract", side_effect=Exception("boom"), create=True):
-            with patch("computer_use.vision.ocr_extract", wraps=None) as mock_ocr:
-                pass
+        with patch("computer_use.vision.pytesseract", side_effect=Exception("boom"), create=True), \
+             patch("computer_use.vision.ocr_extract", wraps=None) as _mock_ocr:
+            pass
         with patch("PIL.Image.open", side_effect=Exception("bad image")):
             result = ocr_extract(b"not an image")
         assert result == []
@@ -96,7 +96,8 @@ class TestAnnotateScreenshot:
 
         img_bytes = _make_png(200, 200, (255, 255, 255))
         elements = [
-            {"index": "0", "role": "button", "label": "Click Me", "frame": {"x": 10, "y": 10, "width": 80, "height": 30}},
+            {"index": "0", "role": "button", "label": "Click Me",
+             "frame": {"x": 10, "y": 10, "width": 80, "height": 30}},
             {"index": "1", "role": "text", "label": "Hello", "frame": {"x": 100, "y": 50, "width": 60, "height": 20}},
         ]
         result = annotate_screenshot(img_bytes, elements)
@@ -130,7 +131,8 @@ class TestAnnotateScreenshot:
         img_bytes = _make_png(100, 100)
         elements = [
             {"index": "0", "role": "button", "label": "No Frame"},
-            {"index": "1", "role": "text", "label": "With Frame", "frame": {"x": 10, "y": 10, "width": 50, "height": 20}},
+            {"index": "1", "role": "text", "label": "With Frame",
+             "frame": {"x": 10, "y": 10, "width": 50, "height": 20}},
         ]
         result = annotate_screenshot(img_bytes, elements)
         assert isinstance(result, bytes)

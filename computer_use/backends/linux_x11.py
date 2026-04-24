@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import subprocess
@@ -238,14 +239,6 @@ def _type_literal_text(text: str) -> str:
         return "keyboard"
 
 
-def normalize_key_for_linux(key: str) -> str:
-    key = key.lower()
-    if key in ("super", "cmd", "command", "meta"):
-        return "ctrl"
-    if key in ("option", "alt"):
-        return "alt"
-    return key
-
 
 def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
     max_elements = int(kwargs.get("max_elements", 10))
@@ -255,10 +248,8 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
     except Exception:
         return _fallback_accessibility_tree(app_name, max_elements)
 
-    try:
+    with contextlib.suppress(Exception):
         Atspi.set_timeout(2000)
-    except Exception:
-        pass
 
     desktop = Atspi.get_desktop(0)
     if desktop is None:
@@ -289,16 +280,12 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             name = None
 
         desc = None
-        try:
+        with contextlib.suppress(Exception):
             desc = el.get_description() if hasattr(el, "get_description") else None
-        except Exception:
-            pass
 
         val = None
-        try:
+        with contextlib.suppress(Exception):
             val = Atspi.Value.get_value(el) if hasattr(el, "get_value") else None
-        except Exception:
-            pass
 
         enabled = None
         try:
@@ -491,7 +478,10 @@ def _fallback_accessibility_tree(app_name: str, max_elements: int) -> dict[str, 
                         geo[k.strip()] = v.strip()
                 if all(k in geo for k in ("X", "Y", "WIDTH", "HEIGHT")):
                     gx, gy, gw, gh = int(geo["X"]), int(geo["Y"]), int(geo["WIDTH"]), int(geo["HEIGHT"])
-                    frame = {"x": gx, "y": gy, "width": gw, "height": gh, "center_x": gx + gw / 2, "center_y": gy + gh / 2}
+                    frame = {
+                        "x": gx, "y": gy, "width": gw, "height": gh,
+                        "center_x": gx + gw / 2, "center_y": gy + gh / 2,
+                    }
 
             ELEMENT_CACHE[index_str] = CachedElement(
                 element=None, frame=frame, app=app_name, role="window", title=title,
@@ -562,7 +552,6 @@ class LinuxX11Backend(ComputerBackend):
         return {"success": True, "from": [from_x, from_y], "to": [to_x, to_y], "duration": duration}
 
     def press_key(self, key: str, **kwargs) -> dict[str, Any]:
-        key = normalize_key_for_linux(key)
         _press_key_sequence(key)
         return {"success": True, "key": key}
 
@@ -611,7 +600,7 @@ class LinuxX11Backend(ComputerBackend):
         try:
             from gi.repository import Atspi  # type: ignore
         except Exception:
-            raise RuntimeError("ATSPI not available for action execution")
+            raise RuntimeError("ATSPI not available for action execution") from None
 
         action_iface = Atspi.Action
         try:

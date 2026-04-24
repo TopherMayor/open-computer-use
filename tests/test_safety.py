@@ -135,7 +135,8 @@ class TestSafetyIntegration:
         try:
             msg1 = {"id": 1, "method": "tools/call", "params": {"name": "list_apps", "arguments": {}}}
             resp1 = handle_request(msg1)
-            assert "error" not in resp1.get("result", {}).get("content", [{}])[0].get("text", "").lower() or resp1.get("result", {}).get("isError") is not True
+            text = resp1.get("result", {}).get("content", [{}])[0].get("text", "").lower()
+            assert "error" not in text or resp1.get("result", {}).get("isError") is not True
 
             msg2 = {"id": 2, "method": "tools/call", "params": {"name": "list_apps", "arguments": {}}}
             resp2 = handle_request(msg2)

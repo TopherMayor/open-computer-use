@@ -66,25 +66,29 @@ class TestMatcherScoring:
     def test_role_match_bonus(self):
         from computer_use.matcher import _score_element, parse_description
         parsed = parse_description("Submit button")
-        score = _score_element(parsed, "1", "button", "Submit", {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
+        score = _score_element(parsed, "1", "button", "Submit",
+                              {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
         assert score >= 30 + 20 + 25 + 10 + 5
 
     def test_no_role_match(self):
         from computer_use.matcher import _score_element, parse_description
         parsed = parse_description("Submit button")
-        score = _score_element(parsed, "1", "link", "Submit", {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
+        score = _score_element(parsed, "1", "link", "Submit",
+                              {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
         assert score < 30 + 20 + 25 + 10 + 5
 
     def test_no_title_overlap(self):
         from computer_use.matcher import _score_element, parse_description
         parsed = parse_description("Submit button")
-        score = _score_element(parsed, "1", "button", "Something Else", {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
+        score = _score_element(parsed, "1", "button", "Something Else",
+                              {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
         assert score >= 30 + 10 + 5
 
     def test_no_frame_penalty(self):
         from computer_use.matcher import _score_element, parse_description
         parsed = parse_description("Submit button")
-        score_with_frame = _score_element(parsed, "1", "button", "Submit", {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
+        score_with_frame = _score_element(parsed, "1", "button", "Submit",
+                                          {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
         score_no_frame = _score_element(parsed, "1", "button", "Submit", None)
         assert score_with_frame > score_no_frame
 
@@ -98,7 +102,8 @@ class TestMatcherScoring:
     def test_quoted_phrase_high_score(self):
         from computer_use.matcher import _score_element, parse_description
         parsed = parse_description('"Save As" button')
-        score = _score_element(parsed, "1", "button", "Save As", {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
+        score = _score_element(parsed, "1", "button", "Save As",
+                              {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25})
         assert score >= 30 + 40 + 10 + 5
 
     def test_ocr_scoring(self):
@@ -119,7 +124,8 @@ class TestFindElements:
         from computer_use.matcher import find_elements
         elements = [
             {"element_index": "0", "role": "window", "title": "FakeApp"},
-            {"element_index": "1", "role": "button", "title": "Submit", "frame": {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25}},
+            {"element_index": "1", "role": "button", "title": "Submit",
+             "frame": {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25}},
         ]
         matches = find_elements("Submit button", elements=elements)
         assert len(matches) >= 1
@@ -138,7 +144,8 @@ class TestFindElements:
     def test_combined_prefers_a11y(self):
         from computer_use.matcher import find_elements
         elements = [
-            {"element_index": "1", "role": "button", "title": "Submit", "frame": {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25}},
+            {"element_index": "1", "role": "button", "title": "Submit",
+             "frame": {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25}},
         ]
         ocr_results = [
             {"text": "Submit", "x": 10, "y": 20, "width": 80, "height": 30, "confidence": 0.9},
@@ -163,7 +170,9 @@ class TestFindElements:
     def test_max_results_limits_output(self):
         from computer_use.matcher import find_elements
         elements = [
-            {"element_index": str(i), "role": "button", "title": "Submit", "frame": {"x": float(i * 10), "y": 0.0, "width": 100.0, "height": 50.0, "center_x": float(i * 10 + 50), "center_y": 25.0}}
+            {"element_index": str(i), "role": "button", "title": "Submit",
+             "frame": {"x": float(i * 10), "y": 0.0, "width": 100.0, "height": 50.0,
+                       "center_x": float(i * 10 + 50), "center_y": 25.0}}
             for i in range(10)
         ]
         matches = find_elements("Submit button", elements=elements, max_results=3)
@@ -178,7 +187,8 @@ class TestFindElements:
     def test_ocr_only_strategy(self):
         from computer_use.matcher import find_elements
         elements = [
-            {"element_index": "1", "role": "button", "title": "Submit", "frame": {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25}},
+            {"element_index": "1", "role": "button", "title": "Submit",
+             "frame": {"x": 0, "y": 0, "width": 100, "height": 50, "center_x": 50, "center_y": 25}},
         ]
         matches = find_elements("Submit", elements=elements, match_strategy="ocr")
         assert all(m.source == "ocr" for m in matches)
@@ -186,7 +196,9 @@ class TestFindElements:
     def test_deduplication(self):
         from computer_use.matcher import find_elements
         elements = [
-            {"element_index": "1", "role": "button", "title": "Submit", "frame": {"x": 0.0, "y": 0.0, "width": 100.0, "height": 50.0, "center_x": 50.0, "center_y": 25.0}},
+            {"element_index": "1", "role": "button", "title": "Submit",
+             "frame": {"x": 0.0, "y": 0.0, "width": 100.0, "height": 50.0,
+                       "center_x": 50.0, "center_y": 25.0}},
         ]
         ocr_results = [
             {"text": "Submit", "x": 0, "y": 0, "width": 100, "height": 50, "confidence": 0.9},
@@ -365,7 +377,8 @@ class TestMatchStrategies:
         from computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-            "params": {"name": "visual_locate", "arguments": {"description": "Submit", "match_strategy": "accessibility"}},
+            "params": {"name": "visual_locate",
+                       "arguments": {"description": "Submit", "match_strategy": "accessibility"}},
         })
         result = resp["result"]
         data = json.loads(result["content"][0]["text"])

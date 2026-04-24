@@ -62,7 +62,8 @@ class TestClipboardIntegration:
         mock_pc = MagicMock()
         mock_pc.paste.return_value = "original"
         with patch.dict("sys.modules", {"pyperclip": mock_pc}):
-            msg = {"id": 1, "method": "tools/call", "params": {"name": "set_value", "arguments": {"element_index": "5", "value": "new"}}}
+            msg = {"id": 1, "method": "tools/call",
+                   "params": {"name": "set_value", "arguments": {"element_index": "5", "value": "new"}}}
             handle_request(msg)
             mock_pc.copy.assert_called_with("original")
         types.ELEMENT_CACHE.pop("5", None)

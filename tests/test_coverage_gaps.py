@@ -12,8 +12,8 @@ _IS_FAKE = os.environ.get("GSD_CU_BACKEND", "fake") == "fake"
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from computer_use.server import handle_request, self_test
-from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache
+from computer_use.server import handle_request, self_test  # noqa: E402
+from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache  # noqa: E402
 
 requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 
@@ -171,7 +171,7 @@ class TestPerformSecondaryActionViaHandleRequest:
 
 class TestSelfTest:
     def test_self_test_returns_zero(self):
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("sys.stdout", new_callable=StringIO) as _mock_stdout:
             result = self_test()
         assert result == 0
 

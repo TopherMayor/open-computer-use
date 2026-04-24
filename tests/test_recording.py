@@ -5,7 +5,6 @@ import stat
 
 import pytest
 
-
 pytestmark = pytest.mark.requires_fake
 
 

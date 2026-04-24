@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import time
+from contextlib import suppress
 from typing import Any
 
 from ..types import ELEMENT_CACHE, CachedElement, clear_cache, element_from_index, frame_center
@@ -746,10 +747,8 @@ def _type_literal_text(text: str) -> str:
         return "clipboard-paste"
     finally:
         if clipboard_loaded:
-            try:
+            with suppress(Exception):
                 subprocess.run(["pbcopy"], input=old_clipboard, text=True, timeout=2, check=False)
-            except Exception:
-                pass
 
 
 def _normalize_ax_action(action: str, available: list[str]) -> str:
@@ -803,9 +802,13 @@ class MacOSBackend(ComputerBackend):
 
         if element_index is not None:
             cached = element_from_index(str(element_index))
-            if button == "left" and click_count == 1 and AX_PRESS in ax_actions(cached.element):
-                if ax_perform(cached.element, AX_PRESS):
-                    return {"success": True, "method": "AXPress", "element_index": str(element_index)}
+            if (
+                button == "left"
+                and click_count == 1
+                and AX_PRESS in ax_actions(cached.element)
+                and ax_perform(cached.element, AX_PRESS)
+            ):
+                return {"success": True, "method": "AXPress", "element_index": str(element_index)}
             cx, cy = frame_center(cached.frame)
         else:
             if x is None or y is None:

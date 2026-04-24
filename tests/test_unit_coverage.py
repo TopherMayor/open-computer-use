@@ -170,18 +170,11 @@ class TestLinuxKeyNormalization:
         assert normalize_key_token("alt") == "alt"
         assert normalize_key_token("option") == "alt"
 
-    def test_normalize_key_for_linux(self):
-        from computer_use.backends.linux_x11 import normalize_key_for_linux
-        assert normalize_key_for_linux("Super") == "ctrl"
-        assert normalize_key_for_linux("Cmd") == "ctrl"
-        assert normalize_key_for_linux("option") == "alt"
-        assert normalize_key_for_linux("a") == "a"
-
     def test_press_key_sequence_empty_raises(self):
         from computer_use.backends.linux_x11 import _press_key_sequence
-        with patch("computer_use.backends.linux_x11.require_pyautogui", return_value=MagicMock()):
-            with pytest.raises(RuntimeError, match="key must not be empty"):
-                _press_key_sequence("")
+        with patch("computer_use.backends.linux_x11.require_pyautogui", return_value=MagicMock()), \
+             pytest.raises(RuntimeError, match="key must not be empty"):
+            _press_key_sequence("")
 
     def test_press_key_sequence_single(self):
         from computer_use.backends.linux_x11 import _press_key_sequence
@@ -320,11 +313,11 @@ class TestLinuxScrollDirections:
         )
         mock_pag = MagicMock()
         from computer_use.backends import input_utils, linux_x11
-        with patch.object(input_utils, "require_pyautogui", return_value=mock_pag):
-            with patch.object(linux_x11, "element_from_index") as mock_efi:
-                mock_efi.return_value = ELEMENT_CACHE["1"]
-                backend = LinuxX11Backend()
-                result = backend.scroll("1", "up", 1.0)
+        with patch.object(input_utils, "require_pyautogui", return_value=mock_pag), \
+             patch.object(linux_x11, "element_from_index") as mock_efi:
+            mock_efi.return_value = ELEMENT_CACHE["1"]
+            backend = LinuxX11Backend()
+            result = backend.scroll("1", "up", 1.0)
         assert result["success"] is True
         assert result["direction"] == "up"
 
@@ -337,12 +330,12 @@ class TestLinuxScrollDirections:
         )
         mock_pag = MagicMock()
         from computer_use.backends import input_utils, linux_x11
-        with patch.object(input_utils, "require_pyautogui", return_value=mock_pag):
-            with patch.object(linux_x11, "element_from_index") as mock_efi:
-                mock_efi.return_value = ELEMENT_CACHE["1"]
-                backend = LinuxX11Backend()
-                with pytest.raises(RuntimeError, match="direction must be one of"):
-                    backend.scroll("1", "diagonal", 1.0)
+        with patch.object(input_utils, "require_pyautogui", return_value=mock_pag), \
+             patch.object(linux_x11, "element_from_index") as mock_efi:
+            mock_efi.return_value = ELEMENT_CACHE["1"]
+            backend = LinuxX11Backend()
+            with pytest.raises(RuntimeError, match="direction must be one of"):
+                backend.scroll("1", "diagonal", 1.0)
 
 
 class TestLinuxClickEdgeCases:
@@ -361,10 +354,10 @@ class TestLinuxClickEdgeCases:
         )
         mock_pag = MagicMock()
         from computer_use.backends import linux_x11
-        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pag):
-            with patch.dict("sys.modules", {"gi": MagicMock(), "gi.repository": MagicMock()}):
-                backend = LinuxX11Backend()
-                result = backend.click(element_index="1", x=None, y=None, click_count=2)
+        with patch.object(linux_x11, "require_pyautogui", return_value=mock_pag), \
+             patch.dict("sys.modules", {"gi": MagicMock(), "gi.repository": MagicMock()}):
+            backend = LinuxX11Backend()
+            result = backend.click(element_index="1", x=None, y=None, click_count=2)
         assert result["success"] is True
         assert result["method"] == "mouse"
         assert result["click_count"] == 2

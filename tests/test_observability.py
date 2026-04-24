@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import json
-import os
 
 import pytest
 
-from computer_use import audit
-from computer_use import safety
+from computer_use import audit, safety
 
 
 @pytest.fixture(autouse=True)
@@ -213,8 +211,8 @@ class TestFailureBundles:
             audit.configure(None)
 
     def test_bundle_contains_screenshot_when_available(self, tmp_path, monkeypatch):
-        from computer_use.server import handle_request
         from computer_use import types as _types
+        from computer_use.server import handle_request
 
         monkeypatch.setenv("GSD_CU_FAILURE_BUNDLES", "1")
         monkeypatch.chdir(tmp_path)
@@ -253,8 +251,8 @@ class TestFailureBundles:
 
 class TestTreeSnapshots:
     def test_no_snapshot_when_disabled(self, tmp_path, monkeypatch):
-        from computer_use.server import _tool_get_app_state
         from computer_use.backends.fake import create_backend
+        from computer_use.server import _tool_get_app_state
 
         monkeypatch.delenv("GSD_CU_SNAPSHOT_TREES", raising=False)
         monkeypatch.chdir(tmp_path)
@@ -263,8 +261,8 @@ class TestTreeSnapshots:
         assert not (tmp_path / "artifacts").exists()
 
     def test_snapshot_created_when_enabled(self, tmp_path, monkeypatch):
-        from computer_use.server import _tool_get_app_state
         from computer_use.backends.fake import create_backend
+        from computer_use.server import _tool_get_app_state
 
         monkeypatch.setenv("GSD_CU_SNAPSHOT_TREES", "1")
         monkeypatch.chdir(tmp_path)
@@ -282,8 +280,8 @@ class TestTreeSnapshots:
     def test_multiple_snapshots_unique_files(self, tmp_path, monkeypatch):
         import time
 
-        from computer_use.server import _tool_get_app_state
         from computer_use.backends.fake import create_backend
+        from computer_use.server import _tool_get_app_state
 
         monkeypatch.setenv("GSD_CU_SNAPSHOT_TREES", "1")
         monkeypatch.chdir(tmp_path)
@@ -296,8 +294,8 @@ class TestTreeSnapshots:
         assert len(files) == 2
 
     def test_snapshot_valid_json(self, tmp_path, monkeypatch):
-        from computer_use.server import _tool_get_app_state
         from computer_use.backends.fake import create_backend
+        from computer_use.server import _tool_get_app_state
 
         monkeypatch.setenv("GSD_CU_SNAPSHOT_TREES", "1")
         monkeypatch.chdir(tmp_path)
