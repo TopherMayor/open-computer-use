@@ -292,6 +292,133 @@ def _tool_screenshot_diff(args: dict[str, Any], be: Any) -> dict[str, Any]:
     return {"content": content}
 
 
+def _tool_visual_click(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+
+    from . import matcher
+    from . import vision
+
+    description = args.get("description", "").strip()
+    if not description:
+        raise RuntimeError("'description' is required")
+    app_name = args.get("app")
+    match_strategy = args.get("match_strategy", "combined")
+    click_count = int(args.get("click_count", 1))
+    mouse_button = args.get("mouse_button", "left")
+
+    if app_name:
+        app_info = be.activate_or_launch_app(app_name)
+        pid = app_info.get("pid", 0)
+        be.get_accessibility_tree(app_name, pid)
+        _types.LAST_APP = app_name
+
+    b64, w, h, method = be.capture_screenshot()
+    screenshot_bytes = base64.b64decode(b64)
+    _types.LAST_SCREENSHOT = screenshot_bytes
+
+    ocr_results: list[dict[str, Any]] = []
+    if match_strategy in ("ocr", "combined", "auto"):
+        ocr_results = vision.ocr_extract(screenshot_bytes)
+
+    elements = _types.flat_elements()
+    matches = matcher.find_elements(
+        description,
+        elements=elements,
+        ocr_results=ocr_results,
+        match_strategy=match_strategy,
+        max_results=1,
+    )
+
+    if not matches:
+        return error_result(
+            "No matching element found for: " + description,
+            {"description": description, "strategy": match_strategy},
+        )
+
+    best = matches[0]
+    cx, cy = matcher.match_center(best)
+
+    click_result = be.click(
+        element_index=best.element_index if best.element_index else None,
+        x=cx,
+        y=cy,
+        mouse_button=mouse_button,
+        click_count=click_count,
+    )
+
+    return {
+        "clicked": True,
+        "match": {
+            "element_index": best.element_index,
+            "role": best.role,
+            "title": best.title,
+            "score": best.score,
+            "source": best.source,
+            "frame": best.frame,
+        },
+        "coordinates": {"x": cx, "y": cy},
+        "click_result": click_result,
+    }
+
+
+def _tool_visual_locate(args: dict[str, Any], be: Any) -> dict[str, Any]:
+    import base64
+
+    from . import matcher
+    from . import vision
+
+    description = args.get("description", "").strip()
+    if not description:
+        raise RuntimeError("'description' is required")
+    app_name = args.get("app")
+    match_strategy = args.get("match_strategy", "combined")
+    max_results = int(args.get("max_results", 5))
+
+    if app_name:
+        app_info = be.activate_or_launch_app(app_name)
+        pid = app_info.get("pid", 0)
+        be.get_accessibility_tree(app_name, pid)
+        _types.LAST_APP = app_name
+
+    b64, w, h, method = be.capture_screenshot()
+    screenshot_bytes = base64.b64decode(b64)
+    _types.LAST_SCREENSHOT = screenshot_bytes
+
+    ocr_results: list[dict[str, Any]] = []
+    if match_strategy in ("ocr", "combined", "auto"):
+        ocr_results = vision.ocr_extract(screenshot_bytes)
+
+    elements = _types.flat_elements()
+    matches = matcher.find_elements(
+        description,
+        elements=elements,
+        ocr_results=ocr_results,
+        match_strategy=match_strategy,
+        max_results=max_results,
+    )
+
+    match_list = []
+    for m in matches:
+        entry: dict[str, Any] = {
+            "element_index": m.element_index,
+            "role": m.role,
+            "title": m.title,
+            "score": m.score,
+            "source": m.source,
+            "frame": m.frame,
+        }
+        if m.ocr_text:
+            entry["ocr_text"] = m.ocr_text
+        match_list.append(entry)
+
+    return {
+        "matches": match_list,
+        "count": len(match_list),
+        "description": description,
+        "strategy": match_strategy,
+    }
+
+
 TOOL_HANDLERS: dict[str, Callable] = {
     "get_app_state": _tool_get_app_state,
     "list_apps": _tool_list_apps,
@@ -304,6 +431,8 @@ TOOL_HANDLERS: dict[str, Callable] = {
     "perform_secondary_action": _tool_perform_secondary_action,
     "analyze_screenshot": _tool_analyze_screenshot,
     "screenshot_diff": _tool_screenshot_diff,
+    "visual_click": _tool_visual_click,
+    "visual_locate": _tool_visual_locate,
 }
 
 

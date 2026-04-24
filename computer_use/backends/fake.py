@@ -64,28 +64,47 @@ class FakeBackend(ComputerBackend):
     def get_accessibility_tree(self, app_name: str, pid: int, **kwargs) -> dict[str, Any] | None:
         max_elements = int(kwargs.get("max_elements", 10))
         clear_cache()
-        for i in range(min(max_elements, 10)):
+        _FAKE_ELEMENTS: list[dict[str, Any]] = [
+            {"role": "window", "title": app_name},
+            {"role": "button", "title": "Submit"},
+            {"role": "button", "title": "Cancel"},
+            {"role": "button", "title": "OK"},
+            {"role": "textfield", "title": "Username"},
+            {"role": "textfield", "title": "Password"},
+            {"role": "menu", "title": "File"},
+            {"role": "menu", "title": "Edit"},
+            {"role": "checkbox", "title": "Remember me"},
+            {"role": "link", "title": "Help"},
+            {"role": "tab", "title": "Settings"},
+            {"role": "button", "title": "Save"},
+            {"role": "button", "title": "Delete"},
+            {"role": "dialog", "title": "Confirm"},
+        ]
+        count = min(max_elements, len(_FAKE_ELEMENTS))
+        for i in range(count):
+            elem_def = _FAKE_ELEMENTS[i]
             index_str = str(i)
             ELEMENT_CACHE[index_str] = CachedElement(
                 element=None,
                 frame={
-                    "x": i * 10,
-                    "y": i * 10,
-                    "width": 100,
-                    "height": 50,
-                    "center_x": i * 10 + 50,
-                    "center_y": i * 10 + 25,
+                    "x": float(i * 120),
+                    "y": float(50 + i * 60),
+                    "width": 100.0,
+                    "height": 50.0,
+                    "center_x": float(i * 120 + 50),
+                    "center_y": float(50 + i * 60 + 25),
                 },
                 app=app_name,
-                role="button" if i > 0 else "window",
-                title=f"Element {i}" if i > 0 else app_name,
+                role=elem_def["role"],
+                title=elem_def["title"],
             )
-        tree = {"element_index": "0", "role": "window", "title": app_name, "children": []}
-        for i in range(1, min(max_elements, 10)):
+        tree: dict[str, Any] = {"element_index": "0", "role": "window", "title": app_name, "children": []}
+        for i in range(1, count):
+            elem_def = _FAKE_ELEMENTS[i]
             tree["children"].append({
                 "element_index": str(i),
-                "role": "button",
-                "title": f"Button {i}",
+                "role": elem_def["role"],
+                "title": elem_def["title"],
             })
         return tree
 

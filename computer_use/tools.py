@@ -165,4 +165,53 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    {
+        "name": "visual_click",
+        "description": "Click an element described in natural language. Takes a screenshot, uses OCR + accessibility tree to locate the best match, then clicks the center of the matched element. Falls back to OCR text matching if no accessibility element matches. Returns the matched element info and coordinates clicked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Natural language description of what to click, e.g. 'the Submit button', 'File menu', 'the username text field', 'OK'.",
+                },
+                "app": {
+                    "type": "string",
+                    "description": "Optional app name to scope the search to.",
+                },
+                "click_count": {"type": "integer", "minimum": 1, "maximum": 4, "default": 1},
+                "mouse_button": {"type": "string", "enum": ["left", "right", "middle"], "default": "left"},
+                "match_strategy": {
+                    "type": "string",
+                    "enum": ["auto", "accessibility", "ocr", "combined"],
+                    "default": "combined",
+                    "description": "Matching strategy: 'accessibility' searches the a11y tree, 'ocr' searches OCR text, 'combined' tries both and picks the best match.",
+                },
+            },
+            "required": ["description"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "visual_locate",
+        "description": "Find screen elements matching a natural language description. Returns coordinates and metadata for all matches without clicking. Useful for verifying a target before acting, or finding multiple similar elements.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Natural language description of what to find.",
+                },
+                "app": {"type": "string", "description": "Optional app name."},
+                "match_strategy": {
+                    "type": "string",
+                    "enum": ["auto", "accessibility", "ocr", "combined"],
+                    "default": "combined",
+                },
+                "max_results": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5},
+            },
+            "required": ["description"],
+            "additionalProperties": False,
+        },
+    },
 ]
