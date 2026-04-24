@@ -225,9 +225,12 @@ def _tool_analyze_screenshot(args: dict[str, Any], be: Any) -> dict[str, Any]:
     ]
 
     if do_annotate and elements:
-        annotated_bytes = vision.annotate_screenshot(screenshot_bytes, elements)
-        annotated_b64 = base64.b64encode(annotated_bytes).decode("ascii")
-        content.append({"type": "image", "data": annotated_b64, "mimeType": "image/png"})
+        try:
+            annotated_bytes = vision.annotate_screenshot(screenshot_bytes, elements)
+            annotated_b64 = base64.b64encode(annotated_bytes).decode("ascii")
+            content.append({"type": "image", "data": annotated_b64, "mimeType": "image/png"})
+        except Exception:
+            content.append({"type": "image", "data": b64, "mimeType": "image/png"})
     else:
         content.append({"type": "image", "data": b64, "mimeType": "image/png"})
 
