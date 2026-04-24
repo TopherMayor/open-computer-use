@@ -14,7 +14,7 @@ class CachedElement:
 
 
 ELEMENT_CACHE: dict[str, CachedElement] = {}
-LAST_APP: str | None = None
+LAST_APP: str | None = None  # TODO: expose via flat_elements or a status endpoint
 LAST_SCREENSHOT: bytes = b""
 
 

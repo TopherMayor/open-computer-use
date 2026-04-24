@@ -200,8 +200,7 @@ def _tool_analyze_screenshot(args: dict[str, Any], be: Any) -> dict[str, Any]:
         app_info = None
 
     b64, w, h, method = be.capture_screenshot()
-    import base64 as _b64
-    screenshot_bytes = _b64.b64decode(b64)
+    screenshot_bytes = base64.b64decode(b64)
     _types.LAST_SCREENSHOT = screenshot_bytes
 
     result_data: dict[str, Any] = {

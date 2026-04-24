@@ -88,7 +88,7 @@ def _list_apps() -> list[dict[str, Any]]:
                     wid = parts[0]
                     pid = int(parts[2])
                     name = " ".join(parts[3:])
-                    if pid and name:
+                    if pid is not None and name:
                         if pid not in apps:
                             apps[pid] = {
                                 "name": name,
@@ -158,7 +158,7 @@ def _find_running_app(app_name: str) -> dict[str, Any] | None:
 def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
     app = _find_running_app(app_name)
     if app is not None:
-        windows = app.get("windows") if app.get("windows") else [None]
+        windows = app.get("windows") or [None]
         _activate_app(windows)
         code, _, _ = _run(["wmctrl", "-a", app_name])
         if code != 0:
@@ -398,7 +398,7 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
 
         try:
             children = el.get_children() if hasattr(el, "get_children") else []
-            if children and len(children) > 0:
+            if children:
                 node["children"] = []
                 for child in children:
                     add_element(child, node["children"], depth + 1)
