@@ -25,12 +25,14 @@ DEFAULT_COLOR = (33, 33, 33)
 
 
 def _role_color(role: str | None) -> tuple[int, int, int]:
+    """Map an accessibility role to an RGB color tuple."""
     if role and role.lower() in ROLE_COLORS:
         return ROLE_COLORS[role.lower()]
     return DEFAULT_COLOR
 
 
 def ocr_extract(image_bytes: bytes) -> list[dict[str, Any]]:
+    """Run Tesseract OCR on image bytes and return detected text blocks."""
     try:
         from PIL import Image
         import pytesseract
@@ -62,6 +64,7 @@ def ocr_extract(image_bytes: bytes) -> list[dict[str, Any]]:
 
 
 def annotate_screenshot(image_bytes: bytes, elements: list[dict[str, Any]]) -> bytes:
+    """Draw labeled bounding boxes for each element onto a screenshot."""
     from PIL import Image, ImageDraw, ImageFont
 
     image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
@@ -109,6 +112,7 @@ def annotate_screenshot(image_bytes: bytes, elements: list[dict[str, Any]]) -> b
 
 
 def diff_screenshots(before_bytes: bytes, after_bytes: bytes, threshold: float = 5.0) -> dict[str, Any]:
+    """Compare two screenshots and report changed regions above the threshold."""
     try:
         import numpy as np
         from PIL import Image
@@ -166,6 +170,7 @@ def diff_screenshots(before_bytes: bytes, after_bytes: bytes, threshold: float =
 
 
 def describe_elements(elements: list[dict[str, Any]]) -> str:
+    """Generate a human-readable summary of detected UI elements."""
     if not elements:
         return "No UI elements detected."
 

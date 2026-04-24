@@ -28,6 +28,7 @@ KEY_ALIASES: dict[str, str] = {
 
 
 def normalize_button(button: str) -> str:
+    """Validate and normalize a mouse button name to left, right, or middle."""
     button = (button or "left").lower()
     if button not in {"left", "right", "middle"}:
         raise RuntimeError("mouse_button must be one of: left, right, middle")
@@ -35,6 +36,7 @@ def normalize_button(button: str) -> str:
 
 
 def require_pyautogui() -> Any:
+    """Import pyautogui with failsafe enabled or raise a helpful error."""
     try:
         import pyautogui
     except Exception as exc:
@@ -47,6 +49,7 @@ def require_pyautogui() -> Any:
 
 
 def capture_screenshot_png() -> tuple[str, int, int, str]:
+    """Capture the screen and return base64 PNG, width, height, and method used."""
     try:
         from PIL import Image
 
@@ -76,6 +79,7 @@ def capture_screenshot_png() -> tuple[str, int, int, str]:
 def perform_scroll(
     x: int, y: int, direction: str, pages: float,
 ) -> None:
+    """Move to (x, y) and scroll the given direction by a fractional page count."""
     pyautogui = require_pyautogui()
     pyautogui.moveTo(x, y)
 
@@ -105,6 +109,7 @@ def perform_scroll(
 def perform_drag(
     from_x: int, from_y: int, to_x: int, to_y: int, duration: float = 0.35,
 ) -> None:
+    """Drag the mouse from one coordinate to another."""
     pyautogui = require_pyautogui()
     pyautogui.moveTo(from_x, from_y)
     pyautogui.dragTo(to_x, to_y, duration=duration, button="left")

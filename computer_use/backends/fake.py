@@ -30,6 +30,7 @@ class FakeBackend(ComputerBackend):
     name = "fake"
 
     def __init__(self):
+        """Initialize the fake backend with no active application."""
         self._app = None
 
     def list_apps(self, **kwargs) -> list[dict[str, Any]]:
@@ -141,4 +142,5 @@ class FakeBackend(ComputerBackend):
 
 
 def create_backend() -> FakeBackend:
+    """Instantiate and return a FakeBackend for testing."""
     return FakeBackend()
