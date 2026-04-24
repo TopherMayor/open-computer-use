@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     wmctrl \
     xclip \
     x11-utils \
-    scrot \
     dbus-x11 \
     at-spi2-core \
     python3-gi \
@@ -37,7 +36,7 @@ WORKDIR /home/testuser/repo
 
 COPY --chown=testuser:testuser requirements-linux.txt .
 RUN python3.12 -m venv --system-site-packages /home/testuser/.venv && \
-    /home/testuser/.venv/bin/pip install --no-cache-dir pytest pytesseract>=0.3.10 -r requirements-linux.txt
+    /home/testuser/.venv/bin/pip install --no-cache-dir pytest "pytesseract>=0.3.10" -r requirements-linux.txt
 
 ENV PATH="/home/testuser/.venv/bin:$PATH"
 

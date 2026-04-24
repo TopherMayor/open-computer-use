@@ -87,3 +87,4 @@ services:
     environment:
       - DISPLAY=:99
     mem_limit: 1g
+    cpus: 2
