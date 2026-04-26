@@ -222,7 +222,8 @@ computer_use/
   types.py             shared type definitions
 docker/desktop-test/   containerized Linux test environment
 tests/                 236 tests across 12 files
-docs/                  architecture, testing, maturity roadmap
+docs/                  architecture, testing, maturity roadmap, implementation plans
+docs/plans/            implementation plans, bugfix docs, test plans
 ```
 
 ~6,150 lines of Python across the `computer_use` package and test suite.
@@ -233,6 +234,7 @@ docs/                  architecture, testing, maturity roadmap
 - [Testing guide](docs/TESTING.md) — test tiers, commands, video artifacts
 - [Docker test plan](docs/docker-desktop-test-plan.md) — containerized desktop test environment
 - [Maturity roadmap](docs/maturity-roadmap.md) — project milestones and priorities
+- [Implementation plans](docs/plans/) — phased build plans, bugfix docs, parity fixes
 
 ## License
 
