@@ -236,6 +236,35 @@ docs/plans/            implementation plans, bugfix docs, test plans
 - [Maturity roadmap](docs/maturity-roadmap.md) — project milestones and priorities
 - [Implementation plans](docs/plans/) — phased build plans, bugfix docs, parity fixes
 
+## Deployment
+
+The MCP server is deployed as a Docker container on **ubuntu** (`192.168.50.61`) and exposed via Traefik reverse proxy.
+
+### Production Server
+
+- **URL**: `https://gsd-mcp.local.tophermayor.com`
+- **Host**: `ubuntu` (`192.168.50.61`)
+- **Container name**: `gsd-computer-use`
+- **Network**: `proxy-net` (shared Traefik network)
+- **Internal port**: `8080`
+- **Transport**: HTTP (stdiod version runs locally; deployed container speaks HTTP/SSE via uvicorn)
+
+### Docker Build Notes
+
+A **Docker-specific requirements file** (`requirements-docker.txt`) is provided that excludes platform-specific packages (`evdev`, `pynput`) which require native display/input hardware unavailable inside a container. The remaining dependencies (`mss`, `pyautogui`, `pillow`, `numpy`, `pyperclip`, `pytesseract`, `fastapi`, `uvicorn`) are fully compatible with the containerized environment.
+
+### Traefik Labels
+
+The container is attached to `proxy-net` with Traefik labels for automatic routing:
+
+- `traefik.enable=true`
+- `traefik.http.routers.gsd-mcp.rule=Host(\`gsd-mcp.local.tophermayor.com\`)`
+- `traefik.http.services.gsd-mcp.loadbalancer.server.port=8080`
+
+### Healthcheck
+
+The container includes a healthcheck to verify the MCP server is responding.
+
 ## License
 
 MIT
