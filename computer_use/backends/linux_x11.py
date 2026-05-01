@@ -249,7 +249,13 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
         return _fallback_accessibility_tree(app_name, max_elements)
 
     try:
-        Atspi.set_timeout(2000)
+        try:
+            Atspi.set_timeout(2000, 2000)
+        except TypeError:
+            try:
+                Atspi.set_timeout(2000)
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -390,20 +396,32 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
         if actions:
             node["actions"] = actions
 
+        # Enumerate children via get_child_count + get_child_at_index
+        # (get_children() is not available on all ATSPI versions)
         try:
-            children = el.get_children() if hasattr(el, "get_children") else []
-            if children:
+            n_children = el.get_child_count() if hasattr(el, "get_child_count") else 0
+            if n_children and n_children > 0:
                 node["children"] = []
-                for child in children:
-                    add_element(child, node["children"], depth + 1, current_path)
+                for ci in range(n_children):
+                    try:
+                        child = el.get_child_at_index(ci)
+                        if child:
+                            add_element(child, node["children"], depth + 1, current_path)
+                    except Exception:
+                        pass
         except Exception:
             pass
 
         parent_children.append(node)
         element_index += 1
 
+    # Walk desktop → app → window using get_child_count/get_child_at_index
+    # Match by app name OR window title to handle cases where the ATSPI app name
+    # (e.g. "desktop_app.py") differs from the user-facing window title (e.g. "Desktop Test App")
     try:
-        for app in desktop.get_applications():
+        n_apps = desktop.get_child_count() if hasattr(desktop, "get_child_count") else 0
+        for ai in range(n_apps):
+            app = desktop.get_child_at_index(ai)
             if not app:
                 continue
             try:
@@ -411,8 +429,27 @@ def _get_accessibility_tree(app_name: str, pid: int, **kwargs) -> dict[str, Any]
             except Exception:
                 name = None
 
-            if name and app_name.lower() in name.lower():
-                for window in app.get_windows():
+            # Check if app name matches
+            app_matches = name and app_name.lower() in name.lower()
+
+            # Also check window titles for a match
+            if not app_matches:
+                n_wins_early = app.get_child_count() if hasattr(app, "get_child_count") else 0
+                for wi in range(n_wins_early):
+                    try:
+                        win = app.get_child_at_index(wi)
+                        if win:
+                            win_name = win.get_name() if hasattr(win, "get_name") else None
+                            if win_name and app_name.lower() in win_name.lower():
+                                app_matches = True
+                                break
+                    except Exception:
+                        pass
+
+            if app_matches or (name and name.lower() in app_name.lower()):
+                n_wins = app.get_child_count() if hasattr(app, "get_child_count") else 0
+                for wi in range(n_wins):
+                    window = app.get_child_at_index(wi)
                     if window:
                         add_element(window, tree["children"], 0, "window")
                         break

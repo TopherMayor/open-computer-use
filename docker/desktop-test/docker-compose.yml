@@ -67,6 +67,77 @@ services:
     mem_limit: 1g
     cpus: 2
 
+  live-tests-recorded:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    working_dir: /home/testuser/repo
+    command: >
+      bash -c "
+        mkdir -p /tmp/runtime-testuser
+        Xvfb :99 -screen 0 1280x800x24 &
+        sleep 0.5
+        openbox &
+        dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
+        sleep 3
+        ffmpeg -y -video_size 1280x800 -framerate 10 -f x11grab -i :99 -codec:v libx264 -preset ultrafast -tune zerolatency -crf 28 /tmp/live-test-raw.mp4 </dev/null >/tmp/ffmpeg.log 2>&1 &
+        FFMPEG_PID=$!
+        DISPLAY=:99 GSD_CU_BACKEND=linux-x11 python3 -m pytest tests/test_linux_desktop_live.py -v --tb=short
+        TEST_EXIT=$?
+        sleep 1
+        kill -INT $FFMPEG_PID 2>/dev/null
+        sleep 3
+        echo '=== ffmpeg last lines ===' && tail -3 /tmp/ffmpeg.log
+        cp /tmp/live-test-raw.mp4 /home/testuser/repo/test-recordings/live-test.mp4
+        echo '=== Recording artifact ===' && ls -lh /home/testuser/repo/test-recordings/live-test.mp4
+        exit $TEST_EXIT
+      "
+    environment:
+      - DISPLAY=:99
+      - GSD_CU_BACKEND=linux-x11
+      - PYTHONPATH=/home/testuser/repo
+      - XDG_RUNTIME_DIR=/tmp/runtime-testuser
+    volumes:
+      - ../../test-recordings:/home/testuser/repo/test-recordings
+    mem_limit: 1g
+    cpus: 2
+
+  browser-kayak-test:
+    build:
+      context: ../..
+      dockerfile: docker/desktop-test/Dockerfile
+    working_dir: /home/testuser/repo
+    command: >
+      bash -c "
+        mkdir -p /tmp/runtime-testuser
+        Xvfb :99 -screen 0 1280x800x24 &
+        sleep 0.5
+        openbox &
+        sleep 0.5
+        echo 'Starting Firefox browser test...'
+        ffmpeg -y -video_size 1280x800 -framerate 10 -f x11grab -i :99 -codec:v libx264 -preset ultrafast -tune zerolatency -crf 28 /tmp/browser-kayak-raw.mp4 </dev/null >/tmp/ffmpeg.log 2>&1 &
+        FFMPEG_PID=$!
+        DISPLAY=:99 GSD_CU_BACKEND=linux-x11 python3 -m pytest tests/test_browser_kayak.py -v --tb=short -s
+        TEST_EXIT=$$?
+        sleep 1
+        kill -INT $$FFMPEG_PID 2>/dev/null
+        sleep 3
+        echo '=== ffmpeg last lines ===' && tail -3 /tmp/ffmpeg.log
+        cp /tmp/browser-kayak-raw.mp4 /home/testuser/repo/test-recordings/browser-kayak.mp4
+        echo '=== Recording artifact ===' && ls -lh /home/testuser/repo/test-recordings/browser-kayak.mp4
+        exit $$TEST_EXIT
+      "
+    environment:
+      - DISPLAY=:99
+      - GSD_CU_BACKEND=linux-x11
+      - PYTHONPATH=/home/testuser/repo
+      - XDG_RUNTIME_DIR=/tmp/runtime-testuser
+      - HOME=/home/testuser
+    volumes:
+      - ../../test-recordings:/home/testuser/repo/test-recordings
+    mem_limit: 2g
+    cpus: 2
+
   novnc-debug:
     build:
       context: ../..

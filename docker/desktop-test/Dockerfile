@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     curl \
     ca-certificates \
     ffmpeg \
+    firefox \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home --shell /bin/bash testuser
