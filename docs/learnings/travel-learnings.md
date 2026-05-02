@@ -1,6 +1,14 @@
 ## 2026-05-01: Google Flights LAX→SJD — cabo
 
 - **URL tested**: `https://www.google.com/travel/flights/search?tfs=...&q=LAX+to+SJD`
+- **Flights found**: 2 prices
+- **Cheapest price**: 300
+- **Airline detected**: Alaska
+- **Bot detection**: none
+- **Screenshot**: /tmp/gsd-travel-learner-1274924/cabo_flights.png
+
+
+- **URL tested**: `https://www.google.com/travel/flights/search?tfs=...&q=LAX+to+SJD`
 - **Flights found**: none
 - **Cheapest price**: N/A
 - **Airline detected**: unknown
