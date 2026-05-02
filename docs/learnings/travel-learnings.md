@@ -1,10 +1,18 @@
+## 2026-05-01: Google Flights LAX→SJD — cabo
+
+- **URL tested**: `https://www.google.com/travel/flights/search?tfs=...&q=LAX+to+SJD`
+- **Flights found**: none
+- **Cheapest price**: N/A
+- **Airline detected**: unknown
+- **Bot detection**: none
+- **Screenshot**: /tmp/gsd-travel-learner-1274580/cabo_flights.png
+
 # Travel Scraping Learnings
 
 Auto-generated learnings from the gsd-travel-automation cron job.
 Each entry captures what worked, what failed, and how to improve.
 
 ---
-## 2026-05-01: Initial Setup — gsd-travel-automation deployed
 
 **Setup completed:**
 - ✅ gsd-computer-use cloned and installed from Gitea
