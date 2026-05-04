@@ -140,9 +140,22 @@ def _launch_or_activate_app(app_name: str) -> dict[str, Any]:
     if not executable:
         executable = app_name
 
+    # Chromium-specific flags to prevent disk cache buildup
+    chromium_flags = [
+        '--disk-cache-size=0',
+        '--media-cache-size=0',
+        '--disable-gpu-cache',
+        '--incognito',
+        '--no-default-browser-check',
+        '--disable-background-networking',
+    ]
+    cmd = [executable]
+    if 'chromium' in executable.lower():
+        cmd.extend(chromium_flags)
+
     try:
         subprocess.Popen(
-            [executable],
+            cmd,
             start_new_session=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

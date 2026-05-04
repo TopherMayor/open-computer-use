@@ -1,0 +1,114 @@
+FROM debian:bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Full rendering stack: Xvfb + openbox + ATSPI + dbus + Chromium + ffmpeg
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    python3.11 \
+    python3.11-venv \
+    python3.11-dev \
+    python3-tk \
+    python3-pip \
+    gcc \
+    # Virtual display + window manager
+    xvfb \
+    openbox \
+    # X11 automation tools
+    xdotool \
+    wmctrl \
+    xclip \
+    x11-utils \
+    x11-apps \
+    # Accessibility (ATSPI) for element tree inspection
+    dbus-x11 \
+    at-spi2-core \
+    python3-gi \
+    gir1.2-atspi-2.0 \
+    gir1.2-gtk-3.0 \
+    # OCR
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    # Browser — real Debian Chromium (not snap stub)
+    chromium \
+    # Video recording
+    ffmpeg \
+    # Networking
+    curl \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for X11 and browser
+RUN useradd --create-home --shell /bin/bash testuser
+
+WORKDIR /app
+
+# Install Python deps as testuser
+COPY requirements-docker.txt requirements.txt
+RUN python3.11 -m venv --system-site-packages /app/.venv && \
+    /app/.venv/bin/pip install --no-cache-dir "pytesseract>=0.3.10" -r requirements.txt
+
+# Application code
+COPY computer_use/ ./computer_use/
+COPY pyproject.toml .
+
+# SSE bridge wrapping the stdio MCP protocol
+RUN cat > /app/sse_bridge.py << 'PYEOF'
+"""SSE/HTTP bridge for the GSD Computer Use MCP server."""
+import json
+import sys
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import uvicorn
+
+sys.path.insert(0, "/app")
+from computer_use.server import handle_request
+
+app = FastAPI(title="GSD Computer Use MCP")
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "server": "gsd-computer-use"}
+
+@app.post("/mcp")
+async def mcp_request(request: Request):
+    body = await request.json()
+    response = handle_request(body)
+    if response is not None:
+        return JSONResponse(content=response)
+    return JSONResponse(content={"jsonrpc": "2.0", "id": body.get("id"), "result": None})
+
+@app.get("/tools")
+async def list_tools():
+    from computer_use.tools import TOOLS
+    return {"tools": TOOLS}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080)
+PYEOF
+
+# Fix ownership so testuser can run everything
+RUN chown -R testuser:testuser /app /home/testuser
+
+USER testuser
+ENV PATH="/app/.venv/bin:$PATH"
+ENV GSD_CU_BACKEND=linux-x11
+ENV DISPLAY=:99
+ENV HOME=/home/testuser
+ENV XDG_RUNTIME_DIR=/tmp/runtime-testuser
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+
+# Start virtual display + window manager + MCP server
+# openbox is critical — complex sites need a window manager for proper rendering
+# Xvfb creates a non-headless virtual display — everything renders fully
+CMD ["sh", "-c", "\
+    mkdir -p /tmp/runtime-testuser && \
+    touch /home/testuser/.Xauthority && \
+    Xvfb :99 -screen 0 1280x800x24 -ac & \
+    sleep 0.5 && \
+    openbox & \
+    sleep 0.5 && \
+    python3 /app/sse_bridge.py"]

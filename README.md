@@ -265,6 +265,37 @@ The container is attached to `proxy-net` with Traefik labels for automatic routi
 
 The container includes a healthcheck to verify the MCP server is responding.
 
+### Storage Management
+
+Chromium accumulates cache, compiled JS, and component data (`~/.cache/chromium/`, `~/.config/chromium/`) that grows unbounded inside the container's overlay2 writable layer. Without intervention this consumes host disk over time.
+
+Two mechanisms prevent this:
+
+**1. tmpfs mounts (docker-compose.yml)**
+
+The deployment compose file (`docker/deploy/docker-compose.yml`) mounts three directories as RAM-backed tmpfs with size caps:
+
+| Mount | Size Cap | Contents |
+|-------|----------|----------|
+| `/home/testuser/.cache` | 300M | Chromium HTTP/media cache |
+| `/home/testuser/.config/chromium` | 200M | Chromium profile, components (Widevine, TTS) |
+| `/tmp` | 100M | Xvfb sockets, dbus, ATSPI runtime |
+
+All data lives in RAM — zero disk growth, auto-cleaned on container restart. Total capped at ~600MB.
+
+**2. Chromium launch flags (linux_x11.py)**
+
+The Linux X11 backend adds cache-busting flags when launching Chromium:
+
+- `--disk-cache-size=0` — no HTTP cache
+- `--media-cache-size=0` — no media cache
+- `--disable-gpu-cache` — no GPU shader cache
+- `--incognito` — no profile/history persistence
+- `--no-default-browser-check` — skip first-run prompt
+- `--disable-background-networking` — no update pings
+
+These flags prevent Chromium from writing caches even if the tmpfs mounts are removed. The tmpfs mounts are a belt-and-suspenders safety net.
+
 ## License
 
 MIT
