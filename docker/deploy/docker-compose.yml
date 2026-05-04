@@ -1,10 +1,16 @@
+# Production deployment — works out of the box on any host.
+# Usage: docker compose -f docker/deploy/docker-compose.yml up -d
+# Then access the MCP server at http://localhost:8080
+
 services:
   mcp:
     build:
-      context: .
+      context: ../..
       dockerfile: Dockerfile.mcp
     container_name: gsd-computer-use
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     environment:
       - GSD_CU_BACKEND=linux-x11
       - DISPLAY=:99
@@ -14,17 +20,3 @@ services:
       - /home/testuser/.cache:size=300M,mode=1777
       - /home/testuser/.config/chromium:size=200M,mode=0700,uid=1000,gid=1000
       - /tmp:size=100M,mode=1777
-    networks:
-      - proxy-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gsd-mcp.rule=Host(`gsd-mcp.local.tophormayor.com`)"
-      - "traefik.http.routers.gsd-mcp.entrypoints=websecure"
-      - "traefik.http.routers.gsd-mcp.tls=true"
-      - "traefik.http.routers.gsd-mcp.tls.certresolver=cloudflare"
-      - "traefik.http.routers.gsd-mcp.middlewares=local-only@file"
-      - "traefik.http.services.gsd-mcp.loadbalancer.server.port=8080"
-
-networks:
-  proxy-net:
-    external: true

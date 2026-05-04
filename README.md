@@ -238,32 +238,47 @@ docs/plans/            implementation plans, bugfix docs, test plans
 
 ## Deployment
 
-The MCP server is deployed as a Docker container on **ubuntu** (`192.168.50.61`) and exposed via Traefik reverse proxy.
+The MCP server can be deployed as a Docker container on any Linux host (x86_64 or ARM64).
 
-### Production Server
+### Quick Deploy
 
-- **URL**: `https://gsd-mcp.local.tophermayor.com`
-- **Host**: `ubuntu` (`192.168.50.61`)
-- **Container name**: `gsd-computer-use`
-- **Network**: `proxy-net` (shared Traefik network)
-- **Internal port**: `8080`
-- **Transport**: HTTP (stdiod version runs locally; deployed container speaks HTTP/SSE via uvicorn)
+```bash
+git clone <repo-url> && cd gsd-computer-use
+docker compose -f docker/deploy/docker-compose.yml up -d
+```
+
+The MCP server will be available at `http://localhost:8080`.
+
+- **Endpoints**: `/health` (GET), `/mcp` (POST — JSON-RPC), `/tools` (GET)
+- **Transport**: HTTP/SSE via uvicorn (the stdio version runs locally; the container speaks HTTP)
 
 ### Docker Build Notes
 
 A **Docker-specific requirements file** (`requirements-docker.txt`) is provided that excludes platform-specific packages (`evdev`, `pynput`) which require native display/input hardware unavailable inside a container. The remaining dependencies (`mss`, `pyautogui`, `pillow`, `numpy`, `pyperclip`, `pytesseract`, `fastapi`, `uvicorn`) are fully compatible with the containerized environment.
 
-### Traefik Labels
+### Reverse Proxy (Optional)
 
-The container is attached to `proxy-net` with Traefik labels for automatic routing:
+To expose the container behind a reverse proxy (Traefik, Nginx, Caddy), override the compose file or add labels. For example, with Traefik:
 
-- `traefik.enable=true`
-- `traefik.http.routers.gsd-mcp.rule=Host(\`gsd-mcp.local.tophermayor.com\`)`
-- `traefik.http.services.gsd-mcp.loadbalancer.server.port=8080`
+```yaml
+# docker-compose.override.yml
+services:
+  mcp:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gsd-mcp.rule=Host(`your-domain.example.com`)"
+      - "traefik.http.services.gsd-mcp.loadbalancer.server.port=8080"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+```
 
 ### Healthcheck
 
-The container includes a healthcheck to verify the MCP server is responding.
+The container includes a built-in healthcheck (`/health` endpoint) to verify the MCP server is responding.
 
 ### Storage Management
 
