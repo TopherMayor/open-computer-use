@@ -8,9 +8,9 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from computer_use.backends.fake import FakeBackend
-from computer_use.server import handle_request
-from computer_use.types import (
+from open_computer_use.backends.fake import FakeBackend
+from open_computer_use.server import handle_request
+from open_computer_use.types import (
     INTERACTIVE_ROLES,
     ELEMENT_CACHE,
     clear_cache,
@@ -23,7 +23,7 @@ from computer_use.types import (
 
 @pytest.fixture(autouse=True)
 def clean_cache():
-    import computer_use.server as srv
+    import open_computer_use.server as srv
 
     clear_cache()
     srv.backend = None

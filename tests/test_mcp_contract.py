@@ -20,7 +20,7 @@ class TestMCPContract:
             result = client.initialize()
             assert "result" in result
             server_info = result["result"]["serverInfo"]
-            assert server_info["name"] == "gsd-computer-use"
+            assert server_info["name"] == "open-computer-use"
             assert "version" in server_info
         finally:
             client.close()

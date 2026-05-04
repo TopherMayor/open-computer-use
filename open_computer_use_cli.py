@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-GSD Computer Use - optional legacy autonomous task runner.
+OpenComputerUse - optional legacy autonomous task runner.
 
 This file is not used by the self-hosted Codex plugin. The local plugin entry
-point is scripts/computer_use_mcp_server.py.
+point is scripts/open_computer_use_mcp_server.py.
 
 This older CLI can delegate screen understanding to a Z.AI vision model and
 then execute actions at OS level via pyautogui/pynput.
@@ -135,9 +135,9 @@ class Action:
         )
 
 
-class GSDComputerUse:
+class OpenComputerUse:
     """
-    GSD Computer Use Agent.
+    OpenComputerUse Agent.
 
     True OS-level desktop automation using Z.AI vision models.
     """
@@ -152,7 +152,7 @@ class GSDComputerUse:
         platform: str = "darwin"
     ):
         """
-        Initialize GSD Computer Use agent.
+        Initialize OpenComputerUse agent.
 
         Args:
             api_key: Z.AI API key (or set Z_AI_API_KEY env var)
@@ -881,7 +881,7 @@ async def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="GSD Computer Use - True OS-level Desktop Automation"
+        description="OpenComputerUse - True OS-level Desktop Automation"
     )
     parser.add_argument(
         "--task", "-t",
@@ -921,7 +921,7 @@ async def main():
 
     args = parser.parse_args()
 
-    agent = GSDComputerUse(
+    agent = OpenComputerUse(
         api_key=args.api_key,
         model=args.model,
         max_steps=args.steps,

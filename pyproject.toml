@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gsd-computer-use"
+name = "open-computer-use"
 dynamic = ["version"]
 description = "Self-hosted Computer Use MCP server for desktop automation"
 readme = "README.md"
@@ -20,14 +20,14 @@ dependencies = [
 ]
 
 [project.scripts]
-gsd-computer-use-mcp = "computer_use.server:main"
-gsd-computer-use = "computer_use.server:main"
+open-computer-use-mcp = "open_computer_use.server:main"
+open-computer-use = "open_computer_use.server:main"
 
 [tool.setuptools.packages.find]
-include = ["computer_use*"]
+include = ["open_computer_use*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "computer_use.__version__"}
+version = {attr = "open_computer_use.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

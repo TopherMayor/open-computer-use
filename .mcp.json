@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "gsd-computer-use": {
+    "open-computer-use": {
       "command": "./scripts/run_computer_use_mcp.sh",
       "args": [],
       "cwd": "."

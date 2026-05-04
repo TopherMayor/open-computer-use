@@ -36,7 +36,7 @@ Full background: `docs/maturity-roadmap.md`
 
 - [ ] Publish as npm package with bundled Python server
 - [ ] MCP client configuration template (Claude Desktop, Cursor, etc.)
-- [ ] `npx gsd-computer-use --self-test` smoke check
+- [ ] `npx open-computer-use --self-test` smoke check
 - [ ] Auto-detect Python path or bundle via PyInstaller
 - [ ] Document install steps for macOS + Linux
 

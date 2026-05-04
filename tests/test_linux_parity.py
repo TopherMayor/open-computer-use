@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache
+from open_computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache
 
 
 @pytest.fixture(autouse=True)
@@ -76,7 +76,7 @@ def _build_tree_mocks(elements_at_root, app_name="TestApp"):
 
 class TestRichAccessibilityTreeMetadata:
     def test_tree_node_includes_frame_data(self):
-        from computer_use.backends.linux_x11 import _get_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _get_accessibility_tree
 
         button = _make_mock_element(x=10, y=20, w=100, h=30)
         mock_atspi = _build_tree_mocks([button])
@@ -101,7 +101,7 @@ class TestRichAccessibilityTreeMetadata:
         assert frame["center_y"] == 35
 
     def test_tree_node_includes_description(self):
-        from computer_use.backends.linux_x11 import _get_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _get_accessibility_tree
 
         button = _make_mock_element(desc="A helpful button")
         mock_atspi = _build_tree_mocks([button])
@@ -115,7 +115,7 @@ class TestRichAccessibilityTreeMetadata:
         assert button_node.get("description") == "A helpful button"
 
     def test_tree_node_includes_actions(self):
-        from computer_use.backends.linux_x11 import _get_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _get_accessibility_tree
 
         button = _make_mock_element(actions=["press", "grab"])
         mock_atspi = _build_tree_mocks([button])
@@ -130,7 +130,7 @@ class TestRichAccessibilityTreeMetadata:
         assert button_node.get("actions") == ["press", "grab"]
 
     def test_tree_node_omits_empty_fields(self):
-        from computer_use.backends.linux_x11 import _get_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _get_accessibility_tree
 
         panel = _make_mock_element(role="panel", name="", desc=None, x=0, y=0, w=0, h=0)
         mock_atspi = _build_tree_mocks([panel])
@@ -146,7 +146,7 @@ class TestRichAccessibilityTreeMetadata:
         assert "actions" not in panel_node
 
     def test_element_cache_has_frame(self):
-        from computer_use.backends.linux_x11 import _get_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _get_accessibility_tree
 
         button = _make_mock_element(x=50, y=60, w=200, h=40)
         mock_atspi = _build_tree_mocks([button])
@@ -167,7 +167,7 @@ class TestRichAccessibilityTreeMetadata:
 
 class TestFallbackTreeFrameData:
     def test_fallback_tree_populates_frames_from_xdotool(self):
-        from computer_use.backends.linux_x11 import _fallback_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _fallback_accessibility_tree
 
         wmctrl_output = "0x02400003  0 hostname My Window Title\n0x02400004  0 hostname Another Window\n"
         xdotool_output_1 = "X=100\nY=200\nWIDTH=800\nHEIGHT=600\nWINDOW=9437187\n"
@@ -185,7 +185,7 @@ class TestFallbackTreeFrameData:
                     result.stdout = xdotool_output_2
             return result
 
-        with patch("computer_use.backends.linux_x11.subprocess.run", side_effect=mock_run):
+        with patch("open_computer_use.backends.linux_x11.subprocess.run", side_effect=mock_run):
             result = _fallback_accessibility_tree("TestApp", 10)
 
         assert result is not None
@@ -205,7 +205,7 @@ class TestFallbackTreeFrameData:
         assert frame_1["center_y"] == 500
 
     def test_fallback_tree_handles_missing_xdotool(self):
-        from computer_use.backends.linux_x11 import _fallback_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _fallback_accessibility_tree
 
         wmctrl_output = "0x02400003  0 hostname My Window\n"
 
@@ -219,7 +219,7 @@ class TestFallbackTreeFrameData:
                 result.stdout = ""
             return result
 
-        with patch("computer_use.backends.linux_x11.subprocess.run", side_effect=mock_run):
+        with patch("open_computer_use.backends.linux_x11.subprocess.run", side_effect=mock_run):
             result = _fallback_accessibility_tree("TestApp", 10)
 
         assert result is not None
@@ -227,7 +227,7 @@ class TestFallbackTreeFrameData:
         assert ELEMENT_CACHE["1"].frame is None
 
     def test_fallback_tree_root_has_synthetic_frame_when_wmctrl_works(self):
-        from computer_use.backends.linux_x11 import _fallback_accessibility_tree
+        from open_computer_use.backends.linux_x11 import _fallback_accessibility_tree
 
         def mock_run(cmd, **kwargs):
             result = MagicMock()
@@ -235,7 +235,7 @@ class TestFallbackTreeFrameData:
             result.stdout = ""
             return result
 
-        with patch("computer_use.backends.linux_x11.subprocess.run", side_effect=mock_run):
+        with patch("open_computer_use.backends.linux_x11.subprocess.run", side_effect=mock_run):
             result = _fallback_accessibility_tree("TestApp", 10)
 
         assert result is not None
@@ -245,7 +245,7 @@ class TestFallbackTreeFrameData:
 
 class TestClickByElementIndex:
     def test_click_tries_atspi_press_action(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         ELEMENT_CACHE["1"] = CachedElement(
             element=MagicMock(),
@@ -267,7 +267,7 @@ class TestClickByElementIndex:
         assert result["element_index"] == "1"
 
     def test_click_falls_back_to_mouse_on_no_atspi(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         ELEMENT_CACHE["1"] = CachedElement(
             element=None,
@@ -276,7 +276,7 @@ class TestClickByElementIndex:
         )
 
         mock_pyautogui = MagicMock()
-        from computer_use.backends import linux_x11
+        from open_computer_use.backends import linux_x11
         with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui), \
              patch.dict("sys.modules", {"gi": MagicMock(), "gi.repository": MagicMock()}):
             backend = LinuxX11Backend()
@@ -288,7 +288,7 @@ class TestClickByElementIndex:
         assert result["y"] == 35
 
     def test_click_does_not_use_atspi_for_right_click(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         ELEMENT_CACHE["1"] = CachedElement(
             element=MagicMock(),
@@ -297,7 +297,7 @@ class TestClickByElementIndex:
         )
 
         mock_pyautogui = MagicMock()
-        from computer_use.backends import linux_x11
+        from open_computer_use.backends import linux_x11
         with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui):
             backend = LinuxX11Backend()
             result = backend.click(element_index="1", x=None, y=None, mouse_button="right")
@@ -309,7 +309,7 @@ class TestClickByElementIndex:
 
 class TestPerformAction:
     def test_perform_action_matches_action_name(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         mock_element = MagicMock()
         ELEMENT_CACHE["1"] = CachedElement(
@@ -329,7 +329,7 @@ class TestPerformAction:
         assert result["action"] == "press"
 
     def test_perform_action_raises_on_unknown(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         mock_element = MagicMock()
         ELEMENT_CACHE["1"] = CachedElement(
@@ -346,7 +346,7 @@ class TestPerformAction:
                 backend.perform_action("1", "jump")
 
     def test_perform_action_raises_on_no_element(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         ELEMENT_CACHE["1"] = CachedElement(
             element=None, frame=None, app="TestApp", role="panel", title="Panel",
@@ -358,7 +358,7 @@ class TestPerformAction:
                 backend.perform_action("1", "press")
 
     def test_perform_action_prefix_match(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         mock_element = MagicMock()
         ELEMENT_CACHE["1"] = CachedElement(
@@ -378,7 +378,7 @@ class TestPerformAction:
         assert result["action"] == "activate"
 
     def test_perform_action_raises_on_no_atspi(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         mock_element = MagicMock()
         ELEMENT_CACHE["1"] = CachedElement(
@@ -395,7 +395,7 @@ class TestPerformAction:
 
 class TestSetValue:
     def test_set_value_falls_back_to_click_select_type(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         ELEMENT_CACHE["1"] = CachedElement(
             element=None,
@@ -404,7 +404,7 @@ class TestSetValue:
         )
 
         mock_pyautogui = MagicMock()
-        from computer_use.backends import linux_x11
+        from open_computer_use.backends import linux_x11
         with patch.object(linux_x11, "require_pyautogui", return_value=mock_pyautogui), \
              patch.object(linux_x11, "_press_key_sequence"), \
              patch.object(linux_x11, "_type_literal_text", return_value="keyboard"):
@@ -416,7 +416,7 @@ class TestSetValue:
         mock_pyautogui.click.assert_called_once_with(x=110, y=35)
 
     def test_set_value_tries_atspi_value_interface(self):
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
         mock_element = MagicMock()
         ELEMENT_CACHE["1"] = CachedElement(
@@ -438,8 +438,8 @@ class TestSetValue:
 
 class TestListApps:
     def test_list_apps_with_installed(self):
-        from computer_use.backends import linux_x11
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends import linux_x11
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
         with patch.object(linux_x11, "_installed_linux_apps", return_value=[
             {"name": "Test App", "running": False, "source": "desktop-file"},
         ]), patch.object(linux_x11, "_list_apps", return_value=[
@@ -455,8 +455,8 @@ class TestListApps:
         assert test_app.get("running") is False
 
     def test_list_apps_without_installed(self):
-        from computer_use.backends import linux_x11
-        from computer_use.backends.linux_x11 import LinuxX11Backend
+        from open_computer_use.backends import linux_x11
+        from open_computer_use.backends.linux_x11 import LinuxX11Backend
         with patch.object(linux_x11, "_list_apps", return_value=[
             {"name": "RunningApp", "running": True, "source": "wmctrl"},
         ]):
@@ -469,7 +469,7 @@ class TestListApps:
 
 class TestMergeAppLists:
     def test_merge_deduplicates_by_name(self):
-        from computer_use.backends.linux_x11 import _merge_app_lists
+        from open_computer_use.backends.linux_x11 import _merge_app_lists
 
         running = [{"name": "Firefox", "pid": 1234, "running": True, "source": "wmctrl"}]
         installed = [{"name": "Firefox", "running": False, "source": "desktop-file"}]
@@ -481,7 +481,7 @@ class TestMergeAppLists:
         assert firefox_entries[0]["pid"] == 1234
 
     def test_merge_sorts_running_first(self):
-        from computer_use.backends.linux_x11 import _merge_app_lists
+        from open_computer_use.backends.linux_x11 import _merge_app_lists
 
         running = [{"name": "zsh", "running": True, "source": "ps"}]
         installed = [

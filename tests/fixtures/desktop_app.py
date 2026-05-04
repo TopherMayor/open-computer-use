@@ -14,7 +14,7 @@ except ImportError:
 
 class DesktopTestApp(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id="org.gsd.desktoptest")
+        super().__init__(application_id="org.opencu.desktoptest")
         self.counter = 0
         self.connect("activate", self.on_activate)
 

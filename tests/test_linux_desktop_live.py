@@ -14,8 +14,8 @@ import pytest
 from mcp_client import MCPClient
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("GSD_CU_BACKEND") != "linux-x11",
-    reason="Requires GSD_CU_BACKEND=linux-x11 with live desktop",
+    os.environ.get("OPEN_CU_BACKEND") != "linux-x11",
+    reason="Requires OPEN_CU_BACKEND=linux-x11 with live desktop",
 )
 
 APP = "Desktop Test App"
@@ -190,7 +190,7 @@ class TestLinuxDesktopLive:
             time.sleep(0.3)
 
         # Type text
-        result = self.client.tool_call("type_text", {"text": "Hello GSD!"})
+        result = self.client.tool_call("type_text", {"text": "Hello OpenCU!"})
         text = _text_from(result)
         assert "error" not in text.lower() or "success" in text.lower(), f"type_text failed: {text}"
 
@@ -280,7 +280,7 @@ class TestLinuxDesktopLive:
         if entry_idx:
             result = self.client.tool_call("set_value", {
                 "element_index": entry_idx,
-                "value": "set by gsd",
+                "value": "set by opencu",
             })
             text = _text_from(result)
             assert "error" not in text.lower(), f"set_value failed: {text}"

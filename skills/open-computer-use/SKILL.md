@@ -1,9 +1,9 @@
 ---
-name: gsd-computer-use
-description: Use the independent self-hosted GSD Computer Use plugin to inspect and control macOS apps through local screenshots, accessibility trees, mouse, keyboard, scrolling, value setting, and accessibility actions.
+name: open-computer-use
+description: Use the independent self-hosted OpenComputerUse plugin to inspect and control macOS apps through local screenshots, accessibility trees, mouse, keyboard, scrolling, value setting, and accessibility actions.
 ---
 
-# GSD Computer Use
+# OpenComputerUse
 
 Use this skill when a task requires controlling macOS applications through the local self-hosted Computer Use MCP server.
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Build a repeatable containerized desktop lab for validating the local `gsd-computer-use` MCP server without touching the user's real desktop.
+Build a repeatable containerized desktop lab for validating the local `open-computer-use` MCP server without touching the user's real desktop.
 
 The current plugin is macOS-oriented. Docker containers on macOS run Linux and cannot access macOS Accessibility, Screen Recording, AppKit, Quartz, or real Mac app windows. This means container testing must use a Linux desktop backend and fixture apps. The goal is not to prove macOS permission behavior inside Docker; the goal is to make protocol behavior, screenshot capture, input execution, app state modeling, and regression tests deterministic.
 
@@ -53,9 +53,9 @@ Before full desktop tests can pass in Docker, split the current server into back
 - `MacOSBackend`: current AppKit/Quartz/pyautogui implementation.
 - `LinuxX11Backend`: container implementation using X11 tools and AT-SPI where available.
 - Backend selection by environment:
-  - `GSD_CU_BACKEND=macos`
-  - `GSD_CU_BACKEND=linux-x11`
-  - `GSD_CU_BACKEND=fake`
+  - `OPEN_CU_BACKEND=macos`
+  - `OPEN_CU_BACKEND=linux-x11`
+  - `OPEN_CU_BACKEND=fake`
 
 The immediate contract tests can run before this split. The GUI tests should wait until the backend split exists.
 

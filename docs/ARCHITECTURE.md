@@ -42,40 +42,40 @@
 
 ## Module Descriptions
 
-### `computer_use/server.py`
+### `open_computer_use/server.py`
 MCP JSON-RPC transport layer. Receives newline-delimited JSON over stdio, dispatches to tool handlers, and returns responses. Handles `initialize`, `tools/list`, `tools/call`, `ping`, `resources/list`, and `prompts/list` methods.
 
-### `computer_use/tools.py`
+### `open_computer_use/tools.py`
 Tool schema registry. Defines all 13 tool names, descriptions, and `inputSchema` objects. Each tool has a corresponding handler function in `server.py`.
 
-### `computer_use/backends/base.py`
+### `open_computer_use/backends/base.py`
 Abstract base class `ComputerBackend` defining the interface all backends must implement: `list_apps`, `activate_or_launch_app`, `capture_screenshot`, `get_accessibility_tree`, `click`, `drag`, `press_key`, `type_text`, `scroll`, `set_value`, `perform_action`, `screen_size`, `is_accessibility_trusted`, `clear_cache`, `flat_elements`, `element_from_index`.
 
-### `computer_use/backends/macos.py`
+### `open_computer_use/backends/macos.py`
 macOS backend using AppKit (`NSWorkspace`), Quartz CoreGraphics, and `pyautogui`. Handles app discovery, window management, screenshots, accessibility trees, and input.
 
-### `computer_use/backends/linux_x11.py`
+### `open_computer_use/backends/linux_x11.py`
 Linux X11 backend for Docker container testing. Uses `xdotool` for input, `scrot` for screenshots, `wmctrl` for window management, and AT-SPI for accessibility trees.
 
-### `computer_use/backends/fake.py`
+### `open_computer_use/backends/fake.py`
 Deterministic test backend. All operations return fixed responses without touching a display. Used for unit and contract tests.
 
-### `computer_use/backends/input_utils.py`
+### `open_computer_use/backends/input_utils.py`
 Clipboard preservation utilities (`preserve_clipboard`, `restore_clipboard`). Used by `type_text` and `set_value` handlers to restore the clipboard after paste-based input.
 
-### `computer_use/types.py`
+### `open_computer_use/types.py`
 Shared types and element cache. `ELEMENT_CACHE` maps element index strings to `CachedElement` dataclass instances containing role, title, frame, and app metadata. `LAST_SCREENSHOT` stores the most recent screenshot bytes for diff operations.
 
-### `computer_use/matcher.py`
+### `open_computer_use/matcher.py`
 Element matching engine for `visual_click` and `visual_locate`. Parses natural language descriptions into tokens and role hints, scores accessibility elements and OCR results, and returns ranked matches.
 
-### `computer_use/vision.py`
+### `open_computer_use/vision.py`
 Screenshot analysis utilities. OCR extraction via Tesseract, element annotation with labeled bounding boxes, screenshot diffing with change detection, and element description summarization.
 
-### `computer_use/safety.py`
+### `open_computer_use/safety.py`
 Safety middleware: action budgets, token-bucket rate limiting, and emergency stop file check. Runs before every tool execution.
 
-### `computer_use/audit.py`
+### `open_computer_use/audit.py`
 Structured JSONL audit logger. Records timestamp, tool name, arguments (with screenshot data stripped), and result summary for every tool call.
 
 ## Data Flow
@@ -150,7 +150,7 @@ The cache is cleared when `get_app_state` is called again for the same or a diff
 
 ## Backend Selection
 
-Controlled by the `GSD_CU_BACKEND` environment variable:
+Controlled by the `OPEN_CU_BACKEND` environment variable:
 
 - `fake` — deterministic test backend, no display needed
 - `macos` — macOS native backend (AppKit, Quartz, pyautogui)

@@ -4,14 +4,14 @@
 
 - [x] Architecture split: backend interface, macOS/Linux/fake backends, tool registry
 - [x] Container test lab: Docker Xvfb, fixture app, Linux X11 backend
-- [x] Structured JSONL audit log (`computer_use/audit.py`)
-- [x] Rate limiting and action budgets (`computer_use/safety.py`)
-- [x] Emergency stop signal (`GSD_CU_EMERGENCY_STOP_FILE`)
+- [x] Structured JSONL audit log (`open_computer_use/audit.py`)
+- [x] Rate limiting and action budgets (`open_computer_use/safety.py`)
+- [x] Emergency stop signal (`OPEN_CU_EMERGENCY_STOP_FILE`)
 - [x] Clipboard preservation (`backends/input_utils.py`)
 - [x] Lint + typecheck (ruff, mypy via `pyproject.toml`)
 - [x] Visual element targeting (`visual_click`, `visual_locate` tools)
 - [x] Video recording of Docker tests (ffmpeg + `run-and-record.sh`)
-- [x] OCR text extraction and screenshot annotation (`computer_use/vision.py`)
+- [x] OCR text extraction and screenshot annotation (`open_computer_use/vision.py`)
 - [x] Screenshot diff comparison (`screenshot_diff` tool)
 
 ## Goal
@@ -31,10 +31,10 @@ Separate MCP protocol handling from platform-specific desktop control.
 
 Deliverables:
 
-- `computer_use/server.py`: MCP JSON-RPC transport and tool registration.
-- `computer_use/backends/base.py`: backend interface.
-- `computer_use/backends/macos.py`: current AppKit/Quartz/pyautogui implementation.
-- `computer_use/backends/fake.py`: deterministic test backend.
+- `open_computer_use/server.py`: MCP JSON-RPC transport and tool registration.
+- `open_computer_use/backends/base.py`: backend interface.
+- `open_computer_use/backends/macos.py`: current AppKit/Quartz/pyautogui implementation.
+- `open_computer_use/backends/fake.py`: deterministic test backend.
 - Move tool schemas into a single registry with tests.
 
 Acceptance:
@@ -202,7 +202,7 @@ Make installation feel intentional.
 Deliverables:
 
 - Python package layout.
-- Console entrypoint, for example `gsd-computer-use-mcp`.
+- Console entrypoint, for example `open-computer-use-mcp`.
 - Versioned releases.
 - Lockfile or reproducible install path.
 - Plugin marketplace metadata for local install.

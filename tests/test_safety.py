@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import time
 
-from computer_use import safety
-from computer_use.safety import ActionBudget, RateLimiter
+from open_computer_use import safety
+from open_computer_use.safety import ActionBudget, RateLimiter
 
 
 class TestActionBudget:
@@ -129,7 +129,7 @@ class TestEmergencyStop:
 
 class TestSafetyIntegration:
     def test_handle_request_respects_budget(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         safety.configure_safety(max_actions=1)
         try:
@@ -145,7 +145,7 @@ class TestSafetyIntegration:
             safety.configure_safety()
 
     def test_handle_request_respects_rate_limit(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         safety.configure_safety(max_per_minute=1)
         try:

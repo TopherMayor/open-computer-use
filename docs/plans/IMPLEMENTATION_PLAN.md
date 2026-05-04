@@ -4,11 +4,11 @@ Reference docs: `docs/docker-desktop-test-plan.md` and `docs/maturity-roadmap.md
 
 ## Phase 1: Architecture Split
 
-Refactor the monolithic `scripts/computer_use_mcp_server.py` into a backend-agnostic package.
+Refactor the monolithic `scripts/open_computer_use_mcp_server.py` into a backend-agnostic package.
 
 ### File Structure
 ```
-computer_use/
+open_computer_use/
   __init__.py
   server.py              # MCP JSON-RPC transport + tool dispatch
   tools.py               # Tool schema registry (the TOOLS list)
@@ -19,7 +19,7 @@ computer_use/
     macos.py             # Current AppKit/Quartz/pyautogui implementation
     fake.py              # Deterministic test backend
 scripts/
-  computer_use_mcp_server.py  # Thin entrypoint importing from computer_use
+  open_computer_use_mcp_server.py  # Thin entrypoint importing from open_computer_use
 ```
 
 ### ComputerBackend Interface (base.py)
@@ -63,13 +63,13 @@ class ComputerBackend(ABC):
 ```
 
 ### Backend Selection
-- Env var `GSD_CU_BACKEND`: `macos` (default on darwin), `linux-x11` (default on linux), `fake`
+- Env var `OPEN_CU_BACKEND`: `macos` (default on darwin), `linux-x11` (default on linux), `fake`
 - Auto-detect if env var not set: `platform.system() == "Darwin"` → macos, else → linux-x11
 
 ### Verification
 ```bash
-python3 scripts/computer_use_mcp_server.py --self-test
-python3 scripts/computer_use_mcp_server.py --list-tools
+python3 scripts/open_computer_use_mcp_server.py --self-test
+python3 scripts/open_computer_use_mcp_server.py --list-tools
 ```
 
 Both must pass with identical output to the original.
@@ -79,7 +79,7 @@ Implement `fake.py` that returns deterministic canned responses for all methods.
 
 ## Phase 2: Linux X11 Backend
 
-Create `computer_use/backends/linux_x11.py`.
+Create `open_computer_use/backends/linux_x11.py`.
 
 ### Dependencies
 - `pyautogui` — mouse/keyboard (works on Linux with X11)
@@ -151,9 +151,9 @@ requirements-test.txt    # pytest
 import subprocess, json
 class MCPClient:
     def __init__(self, backend="fake"):
-        env = {"GSD_CU_BACKEND": backend}
+        env = {"OPEN_CU_BACKEND": backend}
         self.proc = subprocess.Popen(
-            ["python3", "scripts/computer_use_mcp_server.py"],
+            ["python3", "scripts/open_computer_use_mcp_server.py"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, env={**os.environ, **env}
         )
@@ -202,7 +202,7 @@ services:
     build: .
     command: python3 -m pytest tests/test_mcp_contract.py -v
     environment:
-      - GSD_CU_BACKEND=fake
+      - OPEN_CU_BACKEND=fake
 
   desktop-tests:
     build: .
@@ -212,11 +212,11 @@ services:
         openbox &
         dbus-launch --exit-with-session python3 tests/fixtures/desktop_app.py &
         sleep 2
-        DISPLAY=:99 GSD_CU_BACKEND=linux-x11 python3 -m pytest tests/test_desktop_smoke.py -v
+        DISPLAY=:99 OPEN_CU_BACKEND=linux-x11 python3 -m pytest tests/test_desktop_smoke.py -v
       "
     environment:
       - DISPLAY=:99
-      - GSD_CU_BACKEND=linux-x11
+      - OPEN_CU_BACKEND=linux-x11
 
   novnc-debug:
     build: .

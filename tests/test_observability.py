@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from computer_use import audit, safety
+from open_computer_use import audit, safety
 
 
 @pytest.fixture(autouse=True)
@@ -17,7 +17,7 @@ def _reset_audit():
 
 class TestLatencyTracking:
     def test_latency_ms_in_audit_entry(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -33,7 +33,7 @@ class TestLatencyTracking:
             audit.configure(None)
 
     def test_latency_ms_on_error(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -48,7 +48,7 @@ class TestLatencyTracking:
             audit.configure(None)
 
     def test_latency_ms_on_unknown_tool(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -78,7 +78,7 @@ class TestGetMetrics:
         assert audit.get_metrics() == {}
 
     def test_single_tool_metrics(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -98,7 +98,7 @@ class TestGetMetrics:
             audit.configure(None)
 
     def test_multiple_tools_tracked_separately(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -117,7 +117,7 @@ class TestGetMetrics:
             audit.configure(None)
 
     def test_reset_metrics(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -131,7 +131,7 @@ class TestGetMetrics:
             audit.configure(None)
 
     def test_percentile_single_entry(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -146,9 +146,9 @@ class TestGetMetrics:
 
 class TestFailureBundles:
     def test_no_bundle_when_disabled(self, tmp_path, monkeypatch):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
-        monkeypatch.delenv("GSD_CU_FAILURE_BUNDLES", raising=False)
+        monkeypatch.delenv("OPEN_CU_FAILURE_BUNDLES", raising=False)
         monkeypatch.chdir(tmp_path)
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -161,9 +161,9 @@ class TestFailureBundles:
             audit.configure(None)
 
     def test_bundle_created_on_tool_error(self, tmp_path, monkeypatch):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
-        monkeypatch.setenv("GSD_CU_FAILURE_BUNDLES", "1")
+        monkeypatch.setenv("OPEN_CU_FAILURE_BUNDLES", "1")
         monkeypatch.chdir(tmp_path)
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -188,9 +188,9 @@ class TestFailureBundles:
             audit.configure(None)
 
     def test_bundle_includes_audit_entries(self, tmp_path, monkeypatch):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
-        monkeypatch.setenv("GSD_CU_FAILURE_BUNDLES", "1")
+        monkeypatch.setenv("OPEN_CU_FAILURE_BUNDLES", "1")
         monkeypatch.chdir(tmp_path)
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -211,10 +211,10 @@ class TestFailureBundles:
             audit.configure(None)
 
     def test_bundle_contains_screenshot_when_available(self, tmp_path, monkeypatch):
-        from computer_use import types as _types
-        from computer_use.server import handle_request
+        from open_computer_use import types as _types
+        from open_computer_use.server import handle_request
 
-        monkeypatch.setenv("GSD_CU_FAILURE_BUNDLES", "1")
+        monkeypatch.setenv("OPEN_CU_FAILURE_BUNDLES", "1")
         monkeypatch.chdir(tmp_path)
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -234,9 +234,9 @@ class TestFailureBundles:
             audit.configure(None)
 
     def test_no_bundle_on_success(self, tmp_path, monkeypatch):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
-        monkeypatch.setenv("GSD_CU_FAILURE_BUNDLES", "1")
+        monkeypatch.setenv("OPEN_CU_FAILURE_BUNDLES", "1")
         monkeypatch.chdir(tmp_path)
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -251,20 +251,20 @@ class TestFailureBundles:
 
 class TestTreeSnapshots:
     def test_no_snapshot_when_disabled(self, tmp_path, monkeypatch):
-        from computer_use.backends.fake import create_backend
-        from computer_use.server import _tool_get_app_state
+        from open_computer_use.backends.fake import create_backend
+        from open_computer_use.server import _tool_get_app_state
 
-        monkeypatch.delenv("GSD_CU_SNAPSHOT_TREES", raising=False)
+        monkeypatch.delenv("OPEN_CU_SNAPSHOT_TREES", raising=False)
         monkeypatch.chdir(tmp_path)
         be = create_backend()
         _tool_get_app_state({"app": "FakeApp"}, be)
         assert not (tmp_path / "artifacts").exists()
 
     def test_snapshot_created_when_enabled(self, tmp_path, monkeypatch):
-        from computer_use.backends.fake import create_backend
-        from computer_use.server import _tool_get_app_state
+        from open_computer_use.backends.fake import create_backend
+        from open_computer_use.server import _tool_get_app_state
 
-        monkeypatch.setenv("GSD_CU_SNAPSHOT_TREES", "1")
+        monkeypatch.setenv("OPEN_CU_SNAPSHOT_TREES", "1")
         monkeypatch.chdir(tmp_path)
         be = create_backend()
         _tool_get_app_state({"app": "FakeApp"}, be)
@@ -280,10 +280,10 @@ class TestTreeSnapshots:
     def test_multiple_snapshots_unique_files(self, tmp_path, monkeypatch):
         import time
 
-        from computer_use.backends.fake import create_backend
-        from computer_use.server import _tool_get_app_state
+        from open_computer_use.backends.fake import create_backend
+        from open_computer_use.server import _tool_get_app_state
 
-        monkeypatch.setenv("GSD_CU_SNAPSHOT_TREES", "1")
+        monkeypatch.setenv("OPEN_CU_SNAPSHOT_TREES", "1")
         monkeypatch.chdir(tmp_path)
         be = create_backend()
         _tool_get_app_state({"app": "FakeApp"}, be)
@@ -294,10 +294,10 @@ class TestTreeSnapshots:
         assert len(files) == 2
 
     def test_snapshot_valid_json(self, tmp_path, monkeypatch):
-        from computer_use.backends.fake import create_backend
-        from computer_use.server import _tool_get_app_state
+        from open_computer_use.backends.fake import create_backend
+        from open_computer_use.server import _tool_get_app_state
 
-        monkeypatch.setenv("GSD_CU_SNAPSHOT_TREES", "1")
+        monkeypatch.setenv("OPEN_CU_SNAPSHOT_TREES", "1")
         monkeypatch.chdir(tmp_path)
         be = create_backend()
         _tool_get_app_state({"app": "FakeApp", "max_depth": 3, "max_elements": 5}, be)

@@ -43,7 +43,7 @@ def error_result(message: str, details: Any | None = None) -> dict[str, Any]:
 
 
 def get_backend() -> Any:
-    backend_name = os.environ.get("GSD_CU_BACKEND")
+    backend_name = os.environ.get("OPEN_CU_BACKEND")
     if backend_name is None:
         if platform.system() == "Darwin":
             backend_name = "macos"
@@ -71,10 +71,10 @@ def get_backend() -> Any:
 
 
 backend: Any = None
-_audit.configure(os.environ.get("GSD_CU_AUDIT_LOG"))
+_audit.configure(os.environ.get("OPEN_CU_AUDIT_LOG"))
 _safety.configure_safety(
-    max_actions=int(os.environ.get("GSD_CU_MAX_ACTIONS", "0")),
-    max_per_minute=int(os.environ.get("GSD_CU_MAX_PER_MINUTE", "0")),
+    max_actions=int(os.environ.get("OPEN_CU_MAX_ACTIONS", "0")),
+    max_per_minute=int(os.environ.get("OPEN_CU_MAX_PER_MINUTE", "0")),
 )
 
 
@@ -428,7 +428,7 @@ def _tool_visual_locate(args: dict[str, Any], be: Any) -> dict[str, Any]:
 
 
 def _save_tree_snapshot(tree: dict[str, Any] | None) -> None:
-    if not os.environ.get("GSD_CU_SNAPSHOT_TREES"):
+    if not os.environ.get("OPEN_CU_SNAPSHOT_TREES"):
         return
     if tree is None:
         return

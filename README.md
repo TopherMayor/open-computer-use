@@ -1,12 +1,14 @@
-# GSD Computer Use
+# OpenComputerUse
 
-A self-hosted MCP server for desktop automation. Provides 13 tools for inspecting and controlling desktop applications via the Model Context Protocol — works with Claude Desktop, Cursor, Codex, and any MCP-compatible client.
+An open, self-hosted Computer Use MCP server — an alternative to proprietary computer use plugins. Provides 13 tools for inspecting and controlling desktop applications on macOS and Linux via the Model Context Protocol.
+
+Works with Claude Desktop, Cursor, Codex, Hermes, and any MCP-compatible client.
 
 This is an independent local implementation. It does not launch, wrap, proxy, import, or depend on any bundled native Computer Use plugin.
 
 ## What It Does
 
-GSD Computer Use gives AI agents the ability to see and interact with desktop applications through accessibility APIs and screen capture. It supports:
+OpenComputerUse gives AI agents the ability to see and interact with desktop applications through accessibility APIs and screen capture. It supports:
 
 - **Accessibility-first interaction** — targets UI elements by their accessibility tree metadata (role, name, index) rather than pixel coordinates alone
 - **Visual element targeting** — natural language descriptions like "click the Save button" via `visual_click` and `visual_locate`
@@ -19,11 +21,11 @@ GSD Computer Use gives AI agents the ability to see and interact with desktop ap
 ### From source (developer, editable)
 
 ```bash
-git clone <repo-url> && cd gsd-computer-use
+git clone <repo-url> && cd open-computer-use
 python3 -m venv .venv
 ./.venv/bin/pip install -e .
-gsd-computer-use-mcp --version
-gsd-computer-use-mcp --self-test
+open-computer-use-mcp --version
+open-computer-use-mcp --self-test
 ```
 
 ### From source (user, non-editable)
@@ -34,13 +36,13 @@ pip install .
 
 ### Entrypoint
 
-After installation, the `gsd-computer-use-mcp` command is available on `$PATH`. It launches the MCP server over stdio transport:
+After installation, the `open-computer-use-mcp` command is available on `$PATH`. It launches the MCP server over stdio transport:
 
 ```json
 {
   "mcpServers": {
-    "gsd-computer-use": {
-      "command": "gsd-computer-use-mcp"
+    "open-computer-use": {
+      "command": "open-computer-use-mcp"
     }
   }
 }
@@ -74,29 +76,29 @@ pip install -r requirements-lock.txt
 
 ## Safety Features
 
-- **Audit log**: Structured JSONL log of all tool calls, arguments, and results (`GSD_CU_AUDIT_LOG`)
-- **Action budgets**: Limit total actions per session (`GSD_CU_MAX_ACTIONS`)
-- **Rate limiting**: Token-bucket rate limiter for actions per minute (`GSD_CU_MAX_PER_MINUTE`)
-- **Emergency stop**: Halt all actions by creating a file (`GSD_CU_EMERGENCY_STOP_FILE`)
+- **Audit log**: Structured JSONL log of all tool calls, arguments, and results (`OPEN_CU_AUDIT_LOG`)
+- **Action budgets**: Limit total actions per session (`OPEN_CU_MAX_ACTIONS`)
+- **Rate limiting**: Token-bucket rate limiter for actions per minute (`OPEN_CU_MAX_PER_MINUTE`)
+- **Emergency stop**: Halt all actions by creating a file (`OPEN_CU_EMERGENCY_STOP_FILE`)
 - **Clipboard preservation**: Clipboard contents are saved and restored around paste-based text input
 
 ## Backends
 
-| Backend | `GSD_CU_BACKEND` | Platform | Description |
+| Backend | `OPEN_CU_BACKEND` | Platform | Description |
 |---------|-------------------|----------|-------------|
 | macOS | `macos` | macOS | AppKit, Quartz, pyautogui |
 | Linux X11 | `linux-x11` | Linux | Xvfb, xdotool, AT-SPI2 |
 | Fake | `fake` | Any | Deterministic test backend |
 
-Auto-detection: if `GSD_CU_BACKEND` is unset, uses `macos` on macOS and `linux-x11` on Linux when `$DISPLAY` is set, otherwise `fake`.
+Auto-detection: if `OPEN_CU_BACKEND` is unset, uses `macos` on macOS and `linux-x11` on Linux when `$DISPLAY` is set, otherwise `fake`.
 
 ## Quick Start
 
 ```bash
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/python -m computer_use.server --self-test
-./.venv/bin/python -m computer_use.server --list-tools
+./.venv/bin/python -m open_computer_use.server --self-test
+./.venv/bin/python -m open_computer_use.server --list-tools
 ```
 
 macOS users: grant Accessibility and Screen Recording permissions to the process that launches the MCP server (Terminal, VS Code, etc.).
@@ -110,9 +112,9 @@ Add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "gsd-computer-use": {
+    "open-computer-use": {
       "command": "./scripts/run_computer_use_mcp.sh",
-      "cwd": "/path/to/gsd-computer-use"
+      "cwd": "/path/to/open-computer-use"
     }
   }
 }
@@ -205,7 +207,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details including the 
 ## Project Structure
 
 ```
-computer_use/
+open_computer_use/
   __init__.py          version and server identity
   server.py            MCP JSON-RPC server, tool dispatch
   tools.py             13 tool definitions and handlers
@@ -226,7 +228,7 @@ docs/                  architecture, testing, maturity roadmap, implementation p
 docs/plans/            implementation plans, bugfix docs, test plans
 ```
 
-~6,150 lines of Python across the `computer_use` package and test suite.
+~6,150 lines of Python across the `open_computer_use` package and test suite.
 
 ## Documentation
 
@@ -243,7 +245,7 @@ The MCP server can be deployed as a Docker container on any Linux host (x86_64 o
 ### Quick Deploy
 
 ```bash
-git clone <repo-url> && cd gsd-computer-use
+git clone <repo-url> && cd open-computer-use
 docker compose -f docker/deploy/docker-compose.yml up -d
 ```
 
@@ -266,8 +268,8 @@ services:
   mcp:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gsd-mcp.rule=Host(`your-domain.example.com`)"
-      - "traefik.http.services.gsd-mcp.loadbalancer.server.port=8080"
+      - "traefik.http.routers.open-computer-use-mcp.rule=Host(`your-domain.example.com`)"
+      - "traefik.http.services.open-computer-use-mcp.loadbalancer.server.port=8080"
     networks:
       - proxy
 

@@ -8,19 +8,19 @@ from unittest.mock import patch
 
 import pytest
 
-_IS_FAKE = os.environ.get("GSD_CU_BACKEND", "fake") == "fake"
+_IS_FAKE = os.environ.get("OPEN_CU_BACKEND", "fake") == "fake"
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from computer_use.server import handle_request, self_test  # noqa: E402
-from computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache  # noqa: E402
+from open_computer_use.server import handle_request, self_test  # noqa: E402
+from open_computer_use.types import ELEMENT_CACHE, CachedElement, clear_cache  # noqa: E402
 
 requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 
 
 @pytest.fixture(autouse=True)
 def clean_cache():
-    import computer_use.server as srv
+    import open_computer_use.server as srv
 
     clear_cache()
     srv.backend = None
@@ -187,7 +187,7 @@ class TestSelfTest:
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             self_test()
         data = json.loads(mock_stdout.getvalue())
-        assert data["server"] == "gsd-computer-use"
+        assert data["server"] == "open-computer-use"
         assert data["toolCount"] >= 9
         assert data["missingHandlers"] == []
         assert data["schemasValid"] is True
@@ -249,7 +249,7 @@ class TestMCPProtocolEdgeCases:
             def __contains__(self, key):
                 raise RuntimeError("boom")
 
-        with patch("computer_use.server.TOOL_HANDLERS", BoomDict()):
+        with patch("open_computer_use.server.TOOL_HANDLERS", BoomDict()):
             resp = handle_request({
                 "jsonrpc": "2.0",
                 "id": 99,

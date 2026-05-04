@@ -11,7 +11,7 @@ from typing import Any
 
 
 def _enabled() -> bool:
-    return os.environ.get("GSD_CU_FAILURE_BUNDLES") == "1"
+    return os.environ.get("OPEN_CU_FAILURE_BUNDLES") == "1"
 
 
 def create_failure_bundle(
@@ -34,7 +34,7 @@ def create_failure_bundle(
         "traceback": tb,
         "request": request,
         "environment": {
-            "backend": os.environ.get("GSD_CU_BACKEND", "auto"),
+            "backend": os.environ.get("OPEN_CU_BACKEND", "auto"),
             "python": sys.version,
             "platform": platform.platform(),
         },

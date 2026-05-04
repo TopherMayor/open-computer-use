@@ -49,7 +49,7 @@ RUN python3.11 -m venv --system-site-packages /app/.venv && \
     /app/.venv/bin/pip install --no-cache-dir "pytesseract>=0.3.10" -r requirements.txt
 
 # Application code
-COPY computer_use/ ./computer_use/
+COPY open_computer_use/ ./open_computer_use/
 COPY pyproject.toml .
 
 # SSE bridge wrapping the stdio MCP protocol
@@ -62,13 +62,13 @@ from fastapi.responses import JSONResponse
 import uvicorn
 
 sys.path.insert(0, "/app")
-from computer_use.server import handle_request
+from open_computer_use.server import handle_request
 
 app = FastAPI(title="GSD Computer Use MCP")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "server": "gsd-computer-use"}
+    return {"status": "ok", "server": "OpenComputerUse"}
 
 @app.post("/mcp")
 async def mcp_request(request: Request):
@@ -80,7 +80,7 @@ async def mcp_request(request: Request):
 
 @app.get("/tools")
 async def list_tools():
-    from computer_use.tools import TOOLS
+    from open_computer_use.tools import TOOLS
     return {"tools": TOOLS}
 
 if __name__ == "__main__":

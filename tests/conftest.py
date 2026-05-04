@@ -12,7 +12,7 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
     if report.when == "call" and report.failed:
         try:
-            from computer_use.server import get_backend
+            from open_computer_use.server import get_backend
 
             be = get_backend()
             b64, w, h, method = be.capture_screenshot()

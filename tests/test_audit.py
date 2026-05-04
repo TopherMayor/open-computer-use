@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 
-from computer_use import audit
+from open_computer_use import audit
 
 
 class TestAuditConfigure:
@@ -90,7 +90,7 @@ class TestLogAction:
 
 class TestAuditIntegration:
     def test_handle_request_produces_audit_entry(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -107,7 +107,7 @@ class TestAuditIntegration:
             audit.configure(None)
 
     def test_handle_request_error_produces_audit_entry(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)
@@ -123,7 +123,7 @@ class TestAuditIntegration:
             audit.configure(None)
 
     def test_non_tool_call_no_audit(self, tmp_path):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
 
         path = str(tmp_path / "audit.jsonl")
         audit.configure(path)

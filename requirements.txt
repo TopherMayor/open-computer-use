@@ -1,4 +1,4 @@
-# GSD Computer Use - local plugin dependencies
+# OpenComputerUse - local plugin dependencies
 # True OS-level desktop automation without a bundled native plugin.
 
 # Core dependencies

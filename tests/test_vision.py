@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-_IS_FAKE = os.environ.get("GSD_CU_BACKEND", "fake") == "fake"
+_IS_FAKE = os.environ.get("OPEN_CU_BACKEND", "fake") == "fake"
 requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 
 
@@ -28,9 +28,9 @@ def _make_png_b64(width: int = 100, height: int = 100, color: tuple = (128, 128,
 
 @pytest.fixture(autouse=True)
 def clean_state():
-    from computer_use.types import clear_cache
+    from open_computer_use.types import clear_cache
     clear_cache()
-    import computer_use.types as _types
+    import open_computer_use.types as _types
     _types.LAST_SCREENSHOT = b""
     yield
     clear_cache()
@@ -55,7 +55,7 @@ class TestOCRExtract:
         with patch.dict("sys.modules", {"pytesseract": mock_ts}):
             import importlib
 
-            import computer_use.vision as vis
+            import open_computer_use.vision as vis
             importlib.reload(vis)
             results = vis.ocr_extract(img_bytes)
 
@@ -72,16 +72,16 @@ class TestOCRExtract:
         with patch.dict("sys.modules", {"pytesseract": None}):
             import importlib
 
-            import computer_use.vision
-            importlib.reload(computer_use.vision)
-            result = computer_use.vision.ocr_extract(img_bytes)
+            import open_computer_use.vision
+            importlib.reload(open_computer_use.vision)
+            result = open_computer_use.vision.ocr_extract(img_bytes)
         assert result == []
-        importlib.reload(computer_use.vision)
+        importlib.reload(open_computer_use.vision)
 
     def test_ocr_exception_returns_empty(self):
-        from computer_use.vision import ocr_extract
-        with patch("computer_use.vision.pytesseract", side_effect=Exception("boom"), create=True), \
-             patch("computer_use.vision.ocr_extract", wraps=None) as _mock_ocr:
+        from open_computer_use.vision import ocr_extract
+        with patch("open_computer_use.vision.pytesseract", side_effect=Exception("boom"), create=True), \
+             patch("open_computer_use.vision.ocr_extract", wraps=None) as _mock_ocr:
             pass
         with patch("PIL.Image.open", side_effect=Exception("bad image")):
             result = ocr_extract(b"not an image")
@@ -92,7 +92,7 @@ class TestAnnotateScreenshot:
     def test_annotate_draws_boxes(self):
         from PIL import Image
 
-        from computer_use.vision import annotate_screenshot
+        from open_computer_use.vision import annotate_screenshot
 
         img_bytes = _make_png(200, 200, (255, 255, 255))
         elements = [
@@ -107,7 +107,7 @@ class TestAnnotateScreenshot:
         assert result_img.size == (200, 200)
 
     def test_annotate_empty_elements_returns_image(self):
-        from computer_use.vision import annotate_screenshot
+        from open_computer_use.vision import annotate_screenshot
         img_bytes = _make_png(100, 100)
         result = annotate_screenshot(img_bytes, [])
         assert isinstance(result, bytes)
@@ -115,7 +115,7 @@ class TestAnnotateScreenshot:
 
     def test_annotate_color_coding_by_role(self):
 
-        from computer_use.vision import annotate_screenshot
+        from open_computer_use.vision import annotate_screenshot
 
         img_bytes = _make_png(300, 300, (255, 255, 255))
         elements = [
@@ -127,7 +127,7 @@ class TestAnnotateScreenshot:
         assert isinstance(result, bytes)
 
     def test_annotate_skips_elements_without_frame(self):
-        from computer_use.vision import annotate_screenshot
+        from open_computer_use.vision import annotate_screenshot
         img_bytes = _make_png(100, 100)
         elements = [
             {"index": "0", "role": "button", "label": "No Frame"},
@@ -139,7 +139,7 @@ class TestAnnotateScreenshot:
         assert len(result) > 0
 
     def test_annotate_skips_zero_size_elements(self):
-        from computer_use.vision import annotate_screenshot
+        from open_computer_use.vision import annotate_screenshot
         img_bytes = _make_png(100, 100)
         elements = [
             {"index": "0", "role": "button", "frame": {"x": 10, "y": 10, "width": 0, "height": 0}},
@@ -150,14 +150,14 @@ class TestAnnotateScreenshot:
 
 class TestDiffScreenshots:
     def test_identical_images_no_change(self):
-        from computer_use.vision import diff_screenshots
+        from open_computer_use.vision import diff_screenshots
         img = _make_png(100, 100, (128, 128, 128))
         result = diff_screenshots(img, img)
         assert result["changed"] is False
         assert result["regions"] == []
 
     def test_different_images_detects_change(self):
-        from computer_use.vision import diff_screenshots
+        from open_computer_use.vision import diff_screenshots
         before = _make_png(100, 100, (0, 0, 0))
         after = _make_png(100, 100, (255, 255, 255))
         result = diff_screenshots(before, after)
@@ -169,7 +169,7 @@ class TestDiffScreenshots:
         import numpy as np
         from PIL import Image
 
-        from computer_use.vision import diff_screenshots
+        from open_computer_use.vision import diff_screenshots
 
         before_arr = np.full((100, 100, 3), 128, dtype=np.uint8)
         after_arr = before_arr.copy()
@@ -186,7 +186,7 @@ class TestDiffScreenshots:
         assert result["changed"] is False
 
     def test_diff_returns_diff_image(self):
-        from computer_use.vision import diff_screenshots
+        from open_computer_use.vision import diff_screenshots
         before = _make_png(100, 100, (0, 0, 0))
         after = _make_png(100, 100, (255, 0, 0))
         result = diff_screenshots(before, after)
@@ -196,7 +196,7 @@ class TestDiffScreenshots:
         assert diff_img.size == (100, 100)
 
     def test_diff_different_sizes_resizes(self):
-        from computer_use.vision import diff_screenshots
+        from open_computer_use.vision import diff_screenshots
         before = _make_png(100, 100)
         after = _make_png(200, 200)
         result = diff_screenshots(before, after)
@@ -204,7 +204,7 @@ class TestDiffScreenshots:
         assert "changed" in result
 
     def test_diff_regions_have_coordinates(self):
-        from computer_use.vision import diff_screenshots
+        from open_computer_use.vision import diff_screenshots
         before = _make_png(200, 200, (0, 0, 0))
         after = _make_png(200, 200, (255, 255, 255))
         result = diff_screenshots(before, after)
@@ -218,19 +218,19 @@ class TestDiffScreenshots:
 
 class TestDescribeElements:
     def test_empty_elements(self):
-        from computer_use.vision import describe_elements
+        from open_computer_use.vision import describe_elements
         result = describe_elements([])
         assert "No UI elements" in result
 
     def test_single_element(self):
-        from computer_use.vision import describe_elements
+        from open_computer_use.vision import describe_elements
         elements = [{"role": "button", "label": "OK"}]
         result = describe_elements(elements)
         assert "button" in result
         assert "OK" in result
 
     def test_multiple_roles(self):
-        from computer_use.vision import describe_elements
+        from open_computer_use.vision import describe_elements
         elements = [
             {"role": "button", "label": "Save"},
             {"role": "button", "label": "Cancel"},
@@ -243,13 +243,13 @@ class TestDescribeElements:
         assert "input" in result
 
     def test_elements_without_labels(self):
-        from computer_use.vision import describe_elements
+        from open_computer_use.vision import describe_elements
         elements = [{"role": "window"}]
         result = describe_elements(elements)
         assert "window" in result
 
     def test_many_elements_truncates_labels(self):
-        from computer_use.vision import describe_elements
+        from open_computer_use.vision import describe_elements
         elements = [{"role": "button", "label": f"Btn{i}"} for i in range(25)]
         result = describe_elements(elements)
         assert "button" in result
@@ -257,30 +257,30 @@ class TestDescribeElements:
 
 class TestRoleColors:
     def test_known_role(self):
-        from computer_use.vision import _role_color
+        from open_computer_use.vision import _role_color
         color = _role_color("button")
         assert color == (66, 133, 244)
 
     def test_unknown_role(self):
-        from computer_use.vision import _role_color
+        from open_computer_use.vision import _role_color
         color = _role_color("foobar")
         assert color == (33, 33, 33)
 
     def test_none_role(self):
-        from computer_use.vision import _role_color
+        from open_computer_use.vision import _role_color
         color = _role_color(None)
         assert color == (33, 33, 33)
 
     def test_case_insensitive(self):
-        from computer_use.vision import _role_color
+        from open_computer_use.vision import _role_color
         assert _role_color("Button") == _role_color("button")
 
 
 @requires_fake
 class TestLastScreenshot:
     def test_last_screenshot_stored_after_get_app_state(self):
-        import computer_use.types as _types
-        from computer_use.server import handle_request
+        import open_computer_use.types as _types
+        from open_computer_use.server import handle_request
 
         assert _types.LAST_SCREENSHOT == b""
 
@@ -295,7 +295,7 @@ class TestLastScreenshot:
 @requires_fake
 class TestAnalyzeScreenshotTool:
     def test_analyze_screenshot_returns_data(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "analyze_screenshot", "arguments": {}},
@@ -310,7 +310,7 @@ class TestAnalyzeScreenshotTool:
         assert "screen_size" in data
 
     def test_analyze_screenshot_with_app(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "analyze_screenshot", "arguments": {"app": "FakeApp"}},
@@ -323,7 +323,7 @@ class TestAnalyzeScreenshotTool:
         assert "elements" in data
 
     def test_analyze_screenshot_ocr_disabled(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "analyze_screenshot", "arguments": {"ocr": False}},
@@ -338,7 +338,7 @@ class TestAnalyzeScreenshotTool:
 class TestScreenshotDiffTool:
     def test_screenshot_diff_identical_images(self):
         b64 = _make_png_b64(100, 100, (128, 128, 128))
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "screenshot_diff", "arguments": {"before": b64, "after": b64}},
@@ -352,7 +352,7 @@ class TestScreenshotDiffTool:
     def test_screenshot_diff_different_images(self):
         before_b64 = _make_png_b64(100, 100, (0, 0, 0))
         after_b64 = _make_png_b64(100, 100, (255, 255, 255))
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "screenshot_diff", "arguments": {"before": before_b64, "after": after_b64}},
@@ -365,7 +365,7 @@ class TestScreenshotDiffTool:
         assert len(data["regions"]) > 0
 
     def test_screenshot_diff_missing_before(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "screenshot_diff", "arguments": {}},
@@ -375,7 +375,7 @@ class TestScreenshotDiffTool:
     @requires_fake
     def test_screenshot_diff_captures_current_if_no_after(self):
         before_b64 = _make_png_b64(100, 100, (0, 0, 0))
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "screenshot_diff", "arguments": {"before": before_b64}},
@@ -387,7 +387,7 @@ class TestScreenshotDiffTool:
 
 class TestMCPContractVision:
     def test_tools_list_includes_vision_tools(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         tools = resp["result"]["tools"]
         tool_names = [t["name"] for t in tools]
@@ -395,7 +395,7 @@ class TestMCPContractVision:
         assert "screenshot_diff" in tool_names
 
     def test_vision_tools_have_schemas(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         resp = handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         tools = resp["result"]["tools"]
         for tool in tools:
@@ -406,7 +406,7 @@ class TestMCPContractVision:
 
 class TestFakeBackendVision:
     def test_fake_ocr_returns_stub(self):
-        from computer_use.backends.fake import FakeBackend
+        from open_computer_use.backends.fake import FakeBackend
         be = FakeBackend()
         result = be.ocr_extract(b"fake image")
         assert len(result) == 1
@@ -414,14 +414,14 @@ class TestFakeBackendVision:
         assert result[0]["confidence"] == 0.95
 
     def test_fake_annotate_passthrough(self):
-        from computer_use.backends.fake import FakeBackend
+        from open_computer_use.backends.fake import FakeBackend
         be = FakeBackend()
         data = b"fake image data"
         result = be.annotate_screenshot(data, [])
         assert result == data
 
     def test_fake_diff_returns_no_change(self):
-        from computer_use.backends.fake import FakeBackend
+        from open_computer_use.backends.fake import FakeBackend
         be = FakeBackend()
         result = be.diff_screenshots(b"before", b"after")
         assert result["changed"] is False

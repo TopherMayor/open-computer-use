@@ -1,45 +1,42 @@
 {
-  "name": "gsd-computer-use",
-  "version": "1.0.0",
-  "description": "Independent self-hosted macOS Computer Use plugin with local screenshots, accessibility tree inspection, and OS-level input control.",
+  "name": "open-computer-use",
+  "version": "1.1.0",
+  "description": "Self-hosted Computer Use MCP server for desktop automation — macOS and Linux X11",
   "author": {
-    "name": "GSD Community",
-    "email": "support@example.com",
-    "url": "https://github.com/gsd-computer-use/gsd-computer-use"
+    "name": "TopherMayor"
   },
-  "homepage": "https://github.com/gsd-computer-use/gsd-computer-use",
-  "repository": "https://github.com/gsd-computer-use/gsd-computer-use",
+  "repository": "https://gitea.topherymayor.com/TopherMayor/open-computer-use",
   "license": "MIT",
   "keywords": [
     "computer-use",
     "desktop-control",
     "macos",
+    "linux",
     "automation",
     "accessibility",
-    "self-hosted"
+    "self-hosted",
+    "mcp"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "GSD Computer Use",
-    "shortDescription": "Self-hosted Mac app control from Codex",
-    "longDescription": "An independent self-hosted Computer Use implementation for macOS. It exposes local MCP tools for app state capture, accessibility tree inspection, mouse and keyboard actions, scrolling, setting values, and invoking accessibility actions. It does not launch or wrap any bundled native plugin. Screenshots and app metadata stay on the local machine unless the calling agent chooses to include them in its own responses.",
-    "developerName": "GSD Community",
-    "category": "Productivity",
+    "displayName": "OpenComputerUse",
+    "shortDescription": "Self-hosted desktop automation via MCP",
+    "longDescription": "An open, self-hosted Computer Use MCP server for macOS and Linux. Exposes tools for app state capture, accessibility tree inspection, mouse/keyboard actions, visual element targeting, and browser automation. Does not depend on any proprietary plugin.",
+    "developerName": "TopherMayor",
+    "category": "Developer Tools",
     "capabilities": [
       "Interactive",
       "Write",
       "Screenshots",
       "Accessibility",
-      "Desktop Control"
+      "Desktop Control",
+      "Browser Automation"
     ],
-    "websiteURL": "https://github.com/gsd-computer-use/gsd-computer-use",
-    "privacyPolicyURL": "https://github.com/gsd-computer-use/gsd-computer-use",
-    "termsOfServiceURL": "https://github.com/gsd-computer-use/gsd-computer-use",
     "defaultPrompt": [
-      "Inspect Safari and summarize the visible page",
-      "Click the selected button in Finder",
-      "Type a short note into the active app"
+      "Inspect the active app and summarize what's visible",
+      "Click the Submit button",
+      "Type a search query into the active field"
     ],
     "brandColor": "#2563EB",
     "screenshots": []

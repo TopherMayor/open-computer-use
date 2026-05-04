@@ -7,12 +7,12 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile.mcp
-    container_name: gsd-computer-use
+    container_name: open-computer-use
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
-      - GSD_CU_BACKEND=linux-x11
+      - OPEN_CU_BACKEND=linux-x11
       - DISPLAY=:99
     # tmpfs mounts prevent Chromium cache/profile buildup in overlay2 storage.
     # All ephemeral data lives in RAM — zero disk growth, auto-cleaned on restart.

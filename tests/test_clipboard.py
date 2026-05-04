@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from computer_use.backends.input_utils import preserve_clipboard, restore_clipboard
+from open_computer_use.backends.input_utils import preserve_clipboard, restore_clipboard
 
 
 class TestPreserveClipboard:
@@ -45,7 +45,7 @@ class TestRestoreClipboard:
 
 class TestClipboardIntegration:
     def test_type_text_preserves_clipboard(self):
-        from computer_use.server import handle_request
+        from open_computer_use.server import handle_request
         mock_pc = MagicMock()
         mock_pc.paste.return_value = "original"
         with patch.dict("sys.modules", {"pyperclip": mock_pc}):
@@ -54,8 +54,8 @@ class TestClipboardIntegration:
             mock_pc.copy.assert_called_with("original")
 
     def test_set_value_preserves_clipboard(self):
-        from computer_use import types
-        from computer_use.server import handle_request
+        from open_computer_use import types
+        from open_computer_use.server import handle_request
         types.ELEMENT_CACHE["5"] = types.CachedElement(
             element=None, frame={"center_x": 100.0, "center_y": 200.0}, app="Test"
         )

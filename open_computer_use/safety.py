@@ -54,7 +54,7 @@ class RateLimiter:
 
 _budget: ActionBudget = ActionBudget()
 _rate_limiter: RateLimiter = RateLimiter()
-_EMERGENCY_STOP_FILE = os.environ.get("GSD_CU_EMERGENCY_STOP_FILE", "")
+_EMERGENCY_STOP_FILE = os.environ.get("OPEN_CU_EMERGENCY_STOP_FILE", "")
 
 
 def configure_safety(max_actions: int = 0, max_per_minute: int = 0) -> None:

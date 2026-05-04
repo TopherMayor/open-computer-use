@@ -7,7 +7,7 @@
 Fast, no display required. Uses the `fake` backend which returns deterministic responses.
 
 ```bash
-GSD_CU_BACKEND=fake python3 -m pytest tests/ -v
+OPEN_CU_BACKEND=fake python3 -m pytest tests/ -v
 ```
 
 These tests cover MCP contract, tool schemas, handler logic, safety controls, audit logging, vision utilities, element matching, and recording infrastructure.
@@ -35,13 +35,13 @@ Manual tests against the macOS or live Linux backend. Not automated. Requires re
 ### All local tests
 
 ```bash
-GSD_CU_BACKEND=fake python3 -m pytest tests/ -v
+OPEN_CU_BACKEND=fake python3 -m pytest tests/ -v
 ```
 
 ### Specific test file
 
 ```bash
-GSD_CU_BACKEND=fake python3 -m pytest tests/test_mcp_contract.py -v
+OPEN_CU_BACKEND=fake python3 -m pytest tests/test_mcp_contract.py -v
 ```
 
 ### Docker contract tests only

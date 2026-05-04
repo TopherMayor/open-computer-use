@@ -1,7 +1,7 @@
 # Linux X11 Backend Parity Fix Plan
 
 ## Goal
-Bring the Linux X11 backend (`computer_use/backends/linux_x11.py`) to functional parity with the macOS backend (`computer_use/backends/macos.py`). All 14 abstract methods from `ComputerBackend` are structurally implemented but many have functional gaps.
+Bring the Linux X11 backend (`open_computer_use/backends/linux_x11.py`) to functional parity with the macOS backend (`open_computer_use/backends/macos.py`). All 14 abstract methods from `ComputerBackend` are structurally implemented but many have functional gaps.
 
 ## Context
 - The macOS backend is 968 lines. The Linux backend is 532 lines.

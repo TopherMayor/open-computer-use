@@ -8,12 +8,12 @@ from typing import Any
 
 class MCPClient:
     def __init__(self, backend: str = "fake"):
-        self.env = {**os.environ, "GSD_CU_BACKEND": backend, "PYTHONPATH": os.getcwd()}
+        self.env = {**os.environ, "OPEN_CU_BACKEND": backend, "PYTHONPATH": os.getcwd()}
         self.proc = None
 
     def start(self) -> None:
         self.proc = subprocess.Popen(
-            ["python3", "scripts/computer_use_mcp_server.py"],
+            ["python3", "scripts/open_computer_use_mcp_server.py"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
