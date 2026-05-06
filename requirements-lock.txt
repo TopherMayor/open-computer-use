@@ -8,7 +8,7 @@ PyQt6==6.9.1
 PyQt6_sip==13.10.2
 PyYAML==6.0.2
 Pygments==2.18.0
-Twisted==24.11.0
+Twisted==26.4.0rc2
 agentmail==0.4.15
 annotated-types==0.7.0
 ansible-core==2.20.2
