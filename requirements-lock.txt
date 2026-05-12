@@ -111,7 +111,7 @@ ubuntu-pro-client==8001
 uc-micro-py==1.0.3
 ufw==0.36.2
 unattended-upgrades==0.1
-urllib3==2.3.0
+urllib3==2.7.0
 userpath==1.9.2
 wadllib==2.0.0
 websockets==16.0
