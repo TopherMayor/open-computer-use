@@ -115,7 +115,7 @@ urllib3==2.7.0
 userpath==1.9.2
 wadllib==2.0.0
 websockets==16.0
-wheel==0.46.1
+wheel==0.46.2
 xkit==0.0.0
 zipp==3.21.0
 zope.interface==7.2
