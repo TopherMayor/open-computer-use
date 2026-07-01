@@ -38,7 +38,7 @@ httpcore==1.0.9
 httplib2==0.22.0
 httpx==0.28.1
 hyperlink==21.0.0
-idna==3.10
+idna==3.15
 incremental==24.7.2
 inflect==7.3.1
 iniconfig==2.3.0
