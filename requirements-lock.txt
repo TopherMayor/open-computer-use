@@ -91,7 +91,7 @@ python-dateutil==2.9.0
 python-debian==1.0.1+ubuntu1
 python-magic==0.4.27
 referencing==0.36.2
-requests==2.32.3
+requests==2.33.0
 resolvelib==1.2.1
 rich==13.9.4
 rpds-py==0.21.0
