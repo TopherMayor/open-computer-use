@@ -69,7 +69,7 @@ passlib==1.7.4
 pathspec==1.1.0
 pemmican==1.0.3
 pexpect==4.9.0
-pillow==12.2.0
+pillow==12.3.0
 pipx==1.7.1
 platformdirs==4.3.7
 pluggy==1.6.0
