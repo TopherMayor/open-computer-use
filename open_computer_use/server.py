@@ -53,21 +53,20 @@ def get_backend() -> Any:
     if backend_name == "fake":
         from .backends.fake import create_backend
         return create_backend()
-    elif backend_name == "macos":
+    if backend_name == "macos":
         try:
             from .backends.macos import create_backend
             return create_backend()
-        except Exception:
-            pass
-    elif backend_name == "linux-x11":
+        except Exception as exc:
+            raise RuntimeError("macOS backend is unavailable; refusing to use the fake backend") from exc
+    if backend_name == "linux-x11":
         try:
             from .backends.linux_x11 import create_backend
             return create_backend()
-        except Exception:
-            pass
+        except Exception as exc:
+            raise RuntimeError("Linux X11 backend is unavailable; refusing to use the fake backend") from exc
 
-    from .backends.fake import create_backend
-    return create_backend()
+    raise ValueError(f"Unknown OPEN_CU_BACKEND: {backend_name}")
 
 
 backend: Any = None
@@ -448,7 +447,7 @@ def _save_failure_bundle(error: str, request_id: Any, tool_name: str, args: dict
         failure.create_failure_bundle(
             error=error,
             tb=traceback.format_exc(),
-            request={"id": request_id, "tool": tool_name, "args": args},
+            request={"id": request_id, "tool": tool_name, "args": _audit.redact_arguments(args)},
             audit_log_path=_audit.get_path(),
             screenshot=_types_mod.LAST_SCREENSHOT or None,
         )
@@ -565,12 +564,14 @@ def serve_stdio() -> None:
 
 def self_test() -> int:
     from .tools import TOOLS
+    selected_backend = get_backend()
     names = [tool["name"] for tool in TOOLS]
     missing_handlers = [name for name in names if name not in TOOL_HANDLERS]
     schemas = [tool.get("inputSchema", {}).get("type") == "object" for tool in TOOLS]
     result = {
         "server": SERVER_NAME,
         "version": SERVER_VERSION,
+        "backend": type(selected_backend).__name__,
         "toolCount": len(TOOLS),
         "tools": names,
         "missingHandlers": missing_handlers,

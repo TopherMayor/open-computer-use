@@ -12,7 +12,6 @@ from open_computer_use.backends.fake import FakeBackend
 from open_computer_use.server import handle_request
 from open_computer_use.types import (
     INTERACTIVE_ROLES,
-    ELEMENT_CACHE,
     clear_cache,
     count_tree_nodes,
     filter_tree,
@@ -26,7 +25,7 @@ def clean_cache():
     import open_computer_use.server as srv
 
     clear_cache()
-    srv.backend = None
+    srv.backend = FakeBackend()
     yield
     clear_cache()
     srv.backend = None

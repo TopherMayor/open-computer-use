@@ -57,6 +57,8 @@ def _build_tree_mocks(elements_at_root, app_name="TestApp"):
     mock_window.get_name.return_value = "Window"
     mock_window.get_description.return_value = None
     mock_window.get_children.return_value = elements_at_root
+    mock_window.get_child_count.return_value = len(elements_at_root)
+    mock_window.get_child_at_index.side_effect = elements_at_root.__getitem__
     mock_window.get_state_set.return_value = MagicMock()
     mock_window.get_state_set.return_value.contains.return_value = False
     ext = MagicMock()
@@ -66,9 +68,13 @@ def _build_tree_mocks(elements_at_root, app_name="TestApp"):
     mock_app = MagicMock()
     mock_app.get_name.return_value = app_name
     mock_app.get_windows.return_value = [mock_window]
+    mock_app.get_child_count.return_value = 1
+    mock_app.get_child_at_index.return_value = mock_window
 
     mock_desktop = MagicMock()
     mock_desktop.get_applications.return_value = [mock_app]
+    mock_desktop.get_child_count.return_value = 1
+    mock_desktop.get_child_at_index.return_value = mock_app
 
     mock_atspi.get_desktop.return_value = mock_desktop
     return mock_atspi

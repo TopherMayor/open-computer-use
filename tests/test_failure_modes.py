@@ -1,17 +1,26 @@
-from __future__ import annotations
+from unittest.mock import patch
 
+import pytest
 from mcp_client import MCPClient
 
 
 class TestFailureModes:
-    def test_backend_unavailable(self):
-        client = MCPClient(backend="nonexistent")
-        client.start()
-        try:
-            result = client.initialize()
-            assert "result" in result
-        finally:
-            client.close()
+    def test_backend_unavailable(self, monkeypatch):
+        from open_computer_use.server import get_backend
+
+        monkeypatch.setenv("OPEN_CU_BACKEND", "nonexistent")
+        with pytest.raises(ValueError, match="Unknown OPEN_CU_BACKEND"):
+            get_backend()
+
+    def test_explicit_backend_failure_never_falls_back_to_fake(self, monkeypatch):
+        from open_computer_use.server import get_backend
+
+        monkeypatch.setenv("OPEN_CU_BACKEND", "macos")
+        with patch(
+            "open_computer_use.backends.macos.create_backend",
+            side_effect=RuntimeError("backend init failed"),
+        ), pytest.raises(RuntimeError, match="refusing to use the fake backend"):
+            get_backend()
 
     def test_unknown_element_index(self):
         client = MCPClient(backend="fake")

@@ -21,9 +21,10 @@ requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 @pytest.fixture(autouse=True)
 def clean_cache():
     import open_computer_use.server as srv
+    from open_computer_use.backends.fake import FakeBackend
 
     clear_cache()
-    srv.backend = None
+    srv.backend = FakeBackend()
     yield
     clear_cache()
     srv.backend = None

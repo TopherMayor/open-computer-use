@@ -7,14 +7,27 @@ inside Docker (Xvfb + openbox + Chromium). Records the session via ffmpeg.
 import base64
 import os
 import subprocess
+import sys
 import time
 import unittest
+from pathlib import Path
 
-os.environ.setdefault("OPEN_CU_BACKEND", "linux-x11")
+import pytest
+
+if sys.platform != "linux" or os.environ.get("OPEN_CU_RUN_LIVE_BROWSER") != "1" or not os.environ.get("DISPLAY"):
+    pytest.skip(
+        "Requires Linux, DISPLAY, and OPEN_CU_RUN_LIVE_BROWSER=1",
+        allow_module_level=True,
+    )
+
+os.environ["OPEN_CU_BACKEND"] = "linux-x11"
 
 from open_computer_use.backends.linux_x11 import LinuxX11Backend
 
-SCREENSHOTS_DIR = "/home/testuser/repo/test-recordings/browser_debug"
+SCREENSHOTS_DIR = os.environ.get(
+    "OPEN_CU_RECORDINGS_DIR",
+    str(Path(__file__).resolve().parent.parent / "test-recordings" / "browser_debug"),
+)
 # Chromium binary name (Debian: 'chromium', Ubuntu: 'chromium-browser')
 BROWSER = "chromium"
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 
 from open_computer_use import audit
 
@@ -18,6 +19,7 @@ class TestAuditConfigure:
         audit.configure(path)
         audit.log_action("test", {}, "ok")
         assert os.path.exists(path)
+        assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
         audit.configure(None)
 
 
@@ -45,9 +47,25 @@ class TestLogAction:
         with open(path) as f:
             line = f.readline()
         entry = json.loads(line)
-        assert "screenshot" not in entry["args"]
-        assert "image_data" not in entry["args"]
+        assert entry["args"]["screenshot"] == "[REDACTED]"
+        assert entry["args"]["image_data"] == "[REDACTED]"
         assert entry["args"]["app"] == "Safari"
+
+    def test_redacts_typed_and_nested_sensitive_values(self, tmp_path):
+        path = str(tmp_path / "audit.jsonl")
+        audit.configure(path)
+        audit.log_action(
+            "type_text",
+            {"text": "hunter2", "metadata": {"token": "abc", "label": "login"}},
+            "ok",
+        )
+        audit.configure(None)
+        with open(path) as f:
+            entry = json.loads(f.readline())
+        assert entry["args"] == {
+            "text": "[REDACTED]",
+            "metadata": {"token": "[REDACTED]", "label": "login"},
+        }
 
     def test_includes_error_field(self, tmp_path):
         path = str(tmp_path / "audit.jsonl")

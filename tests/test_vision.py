@@ -28,13 +28,18 @@ def _make_png_b64(width: int = 100, height: int = 100, color: tuple = (128, 128,
 
 @pytest.fixture(autouse=True)
 def clean_state():
+    import open_computer_use.server as srv
     from open_computer_use.types import clear_cache
+
     clear_cache()
     import open_computer_use.types as _types
     _types.LAST_SCREENSHOT = b""
+    from open_computer_use.backends.fake import FakeBackend
+    srv.backend = FakeBackend()
     yield
     clear_cache()
     _types.LAST_SCREENSHOT = b""
+    srv.backend = None
 
 
 class TestOCRExtract:
@@ -53,13 +58,9 @@ class TestOCRExtract:
         }
         mock_ts.image_to_data.return_value = mock_data
         with patch.dict("sys.modules", {"pytesseract": mock_ts}):
-            import importlib
-
             import open_computer_use.vision as vis
-            importlib.reload(vis)
             results = vis.ocr_extract(img_bytes)
 
-        importlib.reload(vis)
         assert len(results) == 2
         assert results[0]["text"] == "Hello"
         assert results[0]["x"] == 10
@@ -70,13 +71,9 @@ class TestOCRExtract:
     def test_ocr_import_error_returns_empty(self):
         img_bytes = _make_png()
         with patch.dict("sys.modules", {"pytesseract": None}):
-            import importlib
-
             import open_computer_use.vision
-            importlib.reload(open_computer_use.vision)
             result = open_computer_use.vision.ocr_extract(img_bytes)
         assert result == []
-        importlib.reload(open_computer_use.vision)
 
     def test_ocr_exception_returns_empty(self):
         from open_computer_use.vision import ocr_extract

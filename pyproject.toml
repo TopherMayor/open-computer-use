@@ -19,6 +19,14 @@ dependencies = [
     "pytesseract>=0.3.10",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.15.0",
+    "pytest>=8.0.0",
+    "pyyaml>=6.0.0",
+    "ruff>=0.11.0",
+]
+
 [project.scripts]
 open-computer-use-mcp = "open_computer_use.server:main"
 open-computer-use = "open_computer_use.server:main"

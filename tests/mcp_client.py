@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from typing import Any
 
 
@@ -13,7 +14,7 @@ class MCPClient:
 
     def start(self) -> None:
         self.proc = subprocess.Popen(
-            ["python3", "scripts/open_computer_use_mcp_server.py"],
+            [sys.executable, "scripts/open_computer_use_mcp_server.py"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

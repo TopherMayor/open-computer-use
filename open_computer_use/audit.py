@@ -2,11 +2,27 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from typing import Any
 
 _audit_log_path: str | None = None
 _latency_data: dict[str, list[float]] = {}
+
+_SENSITIVE_KEYS = {
+    "after",
+    "api_key",
+    "authorization",
+    "before",
+    "cookie",
+    "image_data",
+    "password",
+    "screenshot",
+    "secret",
+    "text",
+    "token",
+    "value",
+}
 
 
 def configure(path: str | None) -> None:
@@ -18,6 +34,21 @@ def configure(path: str | None) -> None:
 def get_path() -> str | None:
     """Return the current audit log path."""
     return _audit_log_path
+
+
+def redact_arguments(args: dict[str, Any]) -> dict[str, Any]:
+    """Return audit-safe arguments without typed text, credentials, or images."""
+    def redact(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: "[REDACTED]" if key.lower() in _SENSITIVE_KEYS else redact(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [redact(item) for item in value]
+        return value
+
+    return redact(args)
 
 
 def log_action(
@@ -34,7 +65,7 @@ def log_action(
         "ts": time.time(),
         "iso": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "tool": tool,
-        "args": {k: v for k, v in args.items() if k not in ("screenshot", "image_data")},
+        "args": redact_arguments(args),
         "result": result_summary,
     }
     if error:
@@ -43,7 +74,9 @@ def log_action(
         entry["latency_ms"] = round(latency_ms, 3)
         _latency_data.setdefault(tool, []).append(latency_ms)
     try:
-        with open(_audit_log_path, "a") as f:
+        fd = os.open(_audit_log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "a") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except OSError:
         pass

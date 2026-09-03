@@ -6,6 +6,7 @@ import importlib
 import importlib.metadata
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -74,7 +75,9 @@ class TestPackageMetadata:
         project_root = Path(__file__).resolve().parent.parent
         content = (project_root / "pyproject.toml").read_text()
         assert 'dynamic = ["version"]' in content, "pyproject.toml must declare dynamic version"
-        assert "open_computer_use.__version__" in content, "pyproject.toml must read version from open_computer_use.__version__"
+        assert "open_computer_use.__version__" in content, (
+            "pyproject.toml must read version from open_computer_use.__version__"
+        )
 
     def test_pyproject_has_setuptools_packages(self):
         from pathlib import Path
@@ -86,6 +89,17 @@ class TestPackageMetadata:
 
 
 class TestEntrypointCallable:
+    def test_configured_shell_launcher_works(self):
+        project_root = Path(__file__).resolve().parent.parent
+        result = subprocess.run(
+            [str(project_root / "scripts" / "run_open_computer_use_mcp.sh"), "--self-test"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, f"configured launcher failed: {result.stderr}"
+        assert '"toolCount": 13' in result.stdout
+
     def test_self_test_flag_works(self):
         result = subprocess.run(
             [sys.executable, "-m", "open_computer_use.server", "--self-test"],

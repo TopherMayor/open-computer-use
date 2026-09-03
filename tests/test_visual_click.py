@@ -14,15 +14,20 @@ requires_fake = pytest.mark.skipif(not _IS_FAKE, reason="requires fake backend")
 
 @pytest.fixture(autouse=True)
 def clean_state():
+    import open_computer_use.server as srv
+    from open_computer_use.backends.fake import FakeBackend
     from open_computer_use.types import clear_cache
+
     clear_cache()
     import open_computer_use.types as _types
     _types.LAST_SCREENSHOT = b""
     _types.LAST_APP = None
+    srv.backend = FakeBackend()
     yield
     clear_cache()
     _types.LAST_SCREENSHOT = b""
     _types.LAST_APP = None
+    srv.backend = None
 
 
 class TestParseDescription:
