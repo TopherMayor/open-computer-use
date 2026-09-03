@@ -39,6 +39,20 @@ def _req(name: str, arguments: dict | None = None, req_id: int = 1) -> dict:
     })
 
 
+def test_get_app_state_reports_missing_accessibility_tree(monkeypatch):
+    import open_computer_use.server as srv
+    from open_computer_use.backends.fake import FakeBackend
+
+    backend = FakeBackend()
+    monkeypatch.setattr(backend, "get_accessibility_tree", lambda *args, **kwargs: None)
+    srv.backend = backend
+
+    response = _req("get_app_state", {"app": "TestApp", "include_screenshot": False})
+    payload = json.loads(response["result"]["content"][0]["text"])
+    assert response["result"]["isError"] is True
+    assert "Accessibility tree unavailable" in payload["error"]
+
+
 @requires_fake
 class TestDragViaHandleRequest:
     def test_drag_valid_coordinates(self):

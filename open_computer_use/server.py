@@ -90,6 +90,11 @@ def _tool_get_app_state(args: dict[str, Any], be: Any) -> dict[str, Any]:
     pid = app_info.get("pid", 0)
 
     tree = be.get_accessibility_tree(app_name, pid, max_depth=max_depth, max_elements=max_elements)
+    if tree is None:
+        raise RuntimeError(
+            f"Accessibility tree unavailable for {app_name!r}; "
+            "grant Accessibility permission or use a screenshot-only tool"
+        )
     _save_tree_snapshot(tree)
     _types.LAST_APP = app_name
 
